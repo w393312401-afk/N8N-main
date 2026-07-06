@@ -1,0 +1,1106 @@
+{
+  "id": "yunwuFighterJetCliffTimelapse",
+  "name": "云雾 Prompt Pack 可视化生成流程 - Notion触发",
+  "active": 0,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "输入与解析\n\n从 Notion 读取 1 条“进行中”任务，解析 Prompt / 创意 / Name 字段。\n\n解析节点保持现有合同：支持 JSON Prompt Pack、images[] / videos[]，也支持 IMAGE / VIDEO 文本段。",
+        "height": 220,
+        "width": 360,
+        "color": 5
+      },
+      "id": "note-input",
+      "name": "输入与解析说明",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "content": "HTTP 接口说明\n\n云雾 API 调用都走 HTTP Request 节点，鉴权使用 Authorization: Bearer。\n\n图片：GPT 使用 /v1/images/generations，Gemini 使用 /v1beta/models/{model}:generateContent。视频：multipart POST /v1/videos，并通过 /v1/videos/{id} 与 /v1/videos/{id}/content 查询和下载结果。",
+        "height": 260,
+        "width": 460,
+        "color": 6
+      },
+      "id": "note-image-cn",
+      "name": "HTTP 接口说明",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "content": "最终输出\n\n最终只返回 1 个字段：video。\n\nvideo 的值是最终合并后的视频本地路径，如果没有本地路径则回退到预览 URL。不返回图片、计数、标题、Notion 元数据或中间视频数据。",
+        "height": 220,
+        "width": 380,
+        "color": 4
+      },
+      "id": "note-output-cn",
+      "name": "最终输出说明",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "3054062a-50ec-80c0-b2e7-d476f34e4cf9",
+          "mode": "list",
+          "cachedResultName": "任务数据库(Task Database)",
+          "cachedResultUrl": "https://www.notion.so/3054062a50ec80c0b2e7d476f34e4cf9"
+        },
+        "limit": 1,
+        "simple": false,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "状态|status",
+              "condition": "equals",
+              "statusValue": "进行中"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -992,
+        424
+      ],
+      "id": "926c599f-9a41-43ee-9a15-c66d7d54f197",
+      "name": "读取 Notion 任务",
+      "credentials": {
+        "notionApi": {
+          "id": "mPRMMEZBagvjBBKD",
+          "name": "AI 起号"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const os = require('os');\nconst path = require('path');\nconst row = $input.first().json;\nfunction text(value) {\n  if (value === null || value === undefined) return '';\n  if (typeof value === 'string') return value.trim();\n  if (Array.isArray(value)) return value.map(text).filter(Boolean).join('\\n').trim();\n  if (typeof value === 'object') {\n    if (typeof value.plain_text === 'string') return value.plain_text.trim();\n    if (typeof value.content === 'string') return value.content.trim();\n    if (typeof value.name === 'string') return value.name.trim();\n    if (Array.isArray(value.rich_text)) return value.rich_text.map(text).filter(Boolean).join('\\n').trim();\n    if (Array.isArray(value.title)) return value.title.map(text).filter(Boolean).join(' ').trim();\n    if (value.status) return text(value.status);\n    if (value.text) return text(value.text);\n  }\n  return '';\n}\nfunction sectionsFromText(sourceText, kind) {\n  const lines = String(sourceText || '').split(/\\r?\\n/);\n  const out = [];\n  let current = null;\n  const flush = () => {\n    if (current && current.body.length) out.push({ ...current, prompt: current.body.join('\\n').trim() });\n  };\n  for (const raw of lines) {\n    const t = raw.trim();\n    const m = t.match(/^(?:[*#\\-\\s]*)(IMAGE|VIDEO|图片|视频)\\s*[:：\\-\\s]*(\\d+)/i);\n    if (m) {\n      flush();\n      current = null;\n      let type = m[1].toUpperCase();\n      if (type === '图片') type = 'IMAGE';\n      if (type === '视频') type = 'VIDEO';\n      if (type === kind) {\n        current = { slot: kind + ' ' + Number(m[2]), index: Number(m[2]), body: [] };\n      }\n      continue;\n    }\n    if (current) current.body.push(raw);\n  }\n  flush();\n  return out.filter((x) => x.prompt);\n}\nconst props = row.properties || {};\nconst defaults = row.config || {};\nconst configLabels = {\n  \"apiKey\": \"apiKey（云雾 API Key）\",\n  \"imageApiKey\": \"imageApiKey（云雾图片令牌）\",\n  \"videoApiKey\": \"videoApiKey（云雾视频令牌）\",\n  \"imageApiUrl\": \"imageApiUrl（云雾官方图片端点）\",\n  \"geminiApiUrl\": \"geminiApiUrl（云雾 Gemini 图片端点）\",\n  \"videoApiUrl\": \"videoApiUrl（云雾官方视频端点）\",\n  \"videoStatusUrl\": \"videoStatusUrl（云雾视频状态端点）\",\n  \"videoContentUrl\": \"videoContentUrl（云雾视频下载端点）\",\n  \"imageSaveRoot\": \"imageSaveRoot（图片保存目录）\",\n  \"imageModel\": \"imageModel（图片模型）\",\n  \"imageAspectRatio\": \"imageAspectRatio（图片比例）\",\n  \"imageSize\": \"imageSize（GPT 图片尺寸）\",\n  \"geminiImageSize\": \"geminiImageSize（Gemini 图片清晰度）\",\n  \"videoModel\": \"videoModel（视频模型）\",\n  \"videoSeconds\": \"videoSeconds（视频时长）\",\n  \"videoSize\": \"videoSize（视频比例）\",\n  \"videoWatermark\": \"videoWatermark（水印开关）\",\n  \"imageN\": \"imageN（图片张数）\",\n  \"pollIntervalMs\": \"pollIntervalMs（轮询间隔毫秒）\",\n  \"imageTimeoutMs\": \"imageTimeoutMs（图片超时毫秒）\",\n  \"videoTimeoutMs\": \"videoTimeoutMs（视频超时毫秒）\"\n};\nfunction defaultConfigValue(key) {\n  return defaults[key] ?? defaults[configLabels[key]];\n}\nfunction defaultImageSaveRoot() {\n  return path.join(os.homedir(), '.n8n-files', 'image-output');\n}\nfunction resolveLocalPath(value) {\n  const raw = text(value);\n  if (!raw || (process.platform !== 'win32' && /^[A-Za-z]:[\\\\/]/.test(raw))) return defaultImageSaveRoot();\n  const home = os.homedir();\n  const expanded = raw\n    .replace(/^~(?=$|[\\\\/])/, home)\n    .replace(/\\$\\{HOME\\}|\\$HOME|%USERPROFILE%|%HOME%/gi, home);\n  return path.resolve(expanded);\n}\nconst name = text(row.Name) || text(row.name) || text(props.Name) || 'Notion prompt task';\nconst status = text(row[\"状态\"]) || text(row.status) || text(props[\"状态\"]);\nconst prompt = text(row.Prompt) || text(row.prompt) || text(props.Prompt);\nconst creative = text(row[\"创意\"]) || text(row.creative) || text(props[\"创意\"]);\nconst rawPrompt = prompt || creative;\nif (!rawPrompt) throw new Error('Notion task is missing Prompt content.');\nconst trimmed = rawPrompt.trim();\nconst sourcePack = (trimmed.startsWith('{') || trimmed.startsWith('[')) ? JSON.parse(trimmed) : { promptPack: trimmed };\nconst pack = {\n  ...sourcePack,\n  title: sourcePack.title || name,\n  taskKey: row.id || row.pageId || row.url || sourcePack.taskKey || name,\n  notionTask: { id: row.id || row.pageId || '', url: row.url || '', name, status, creative },\n};\nconst legacyApiKey = pack.apiKey || pack.yunwuApiKey || defaultConfigValue('apiKey') || '';\nconst imageApiKey = pack.image?.apiKey || pack.imageApiKey || pack.yunwuImageApiKey || defaultConfigValue('imageApiKey') || legacyApiKey;\nconst videoApiKey = pack.video?.apiKey || pack.videoApiKey || pack.yunwuVideoApiKey || defaultConfigValue('videoApiKey') || legacyApiKey;\nconst config = {\n  apiKey: legacyApiKey,\n  imageApiKey,\n  videoApiKey,\n  baseUrl: pack.baseUrl || defaultConfigValue('baseUrl') || '',\n  imageApiUrl: pack.image?.apiUrl || pack.imageApiUrl || defaultConfigValue('imageApiUrl') || 'https://yunwu.ai/v1/images/generations',\n  geminiApiUrl: pack.image?.geminiApiUrl || pack.geminiApiUrl || defaultConfigValue('geminiApiUrl') || 'https://yunwu.ai/v1beta/models/{model}:generateContent',\n  videoApiUrl: pack.video?.apiUrl || pack.videoApiUrl || defaultConfigValue('videoApiUrl') || 'https://yunwu.ai/v1/videos',\n  videoStatusUrl: pack.video?.statusUrl || pack.videoStatusUrl || defaultConfigValue('videoStatusUrl') || 'https://yunwu.ai/v1/videos/{id}',\n  videoContentUrl: pack.video?.contentUrl || pack.videoContentUrl || defaultConfigValue('videoContentUrl') || 'https://yunwu.ai/v1/videos/{id}/content',\n  imageSaveRoot: resolveLocalPath(pack.image?.saveRoot || pack.imageSaveRoot || defaultConfigValue('imageSaveRoot')),\n  imageModel: pack.image?.model || pack.imageModel || defaultConfigValue('imageModel') || 'gpt-image-2-all',\n  imageAspectRatio: pack.image?.aspect_ratio || pack.imageAspectRatio || defaultConfigValue('imageAspectRatio') || '9:16',\n  imageSize: pack.image?.size || pack.imageSize || defaultConfigValue('imageSize') || 'auto',\n  geminiImageSize: pack.image?.image_size || pack.geminiImageSize || defaultConfigValue('geminiImageSize') || '1K',\n  imageN: Number(pack.image?.n || pack.imageN || defaultConfigValue('imageN') || 1),\n  pollIntervalMs: Number(pack.poll?.intervalMs || pack.pollIntervalMs || defaultConfigValue('pollIntervalMs') || 10000),\n  imageTimeoutMs: Number(pack.image?.timeoutMs || pack.imageTimeoutMs || pack.poll?.imageTimeoutMs || defaultConfigValue('imageTimeoutMs') || 20 * 60 * 1000),\n  videoModel: pack.video?.model || pack.videoModel || defaultConfigValue('videoModel') || 'veo_3_1',\n  videoSeconds: String(pack.video?.seconds || pack.videoSeconds || defaultConfigValue('videoSeconds') || '8'),\n  videoSize: pack.video?.size || pack.videoSize || defaultConfigValue('videoSize') || '9x16',\n  videoWatermark: String(pack.video?.watermark ?? pack.videoWatermark ?? defaultConfigValue('videoWatermark') ?? 'false'),\n  videoTimeoutMs: Number(pack.video?.timeoutMs || pack.videoTimeoutMs || pack.poll?.videoTimeoutMs || defaultConfigValue('videoTimeoutMs') || 40 * 60 * 1000),\n};\nconst images = Array.isArray(pack.images) ? pack.images : sectionsFromText(pack.promptPack || pack.promptPacked || pack.prompts || '', 'IMAGE');\nconst videos = Array.isArray(pack.videos) ? pack.videos : sectionsFromText(pack.promptPack || pack.promptPacked || pack.prompts || '', 'VIDEO').map((v) => ({ ...v, firstImage: v.index }));\nconst normalizedImages = images.map((item, i) => ({\n  slot: item.slot || item.label || 'IMAGE ' + (i + 1),\n  index: Number(item.index || String(item.slot || '').match(/\\d+/)?.[0] || i + 1),\n  prompt: String(item.prompt || item.text || '').trim(),\n})).filter((item) => item.prompt);\nconst maxImageIndex = normalizedImages.reduce((max, item) => Math.max(max, item.index), 0);\nfunction normalizeLastImage(item, i) {\n  const raw = item.lastImage === undefined ? (i + 2 <= maxImageIndex ? i + 2 : null) : item.lastImage;\n  if (raw === null || raw === undefined || raw === '') return null;\n  const index = Number(raw);\n  return Number.isFinite(index) && index <= maxImageIndex ? index : null;\n}\nconst normalizedVideos = videos.map((item, i) => ({\n  slot: item.slot || item.label || 'VIDEO ' + (i + 1),\n  index: Number(item.index || String(item.slot || '').match(/\\d+/)?.[0] || i + 1),\n  prompt: String(item.prompt || item.text || '').trim(),\n  firstImage: item.firstImage === null ? null : Number(item.firstImage || item.firstImageIndex || i + 1),\n  lastImage: normalizeLastImage(item, i),\n})).filter((item) => item.prompt);\nif (!normalizedImages.length) throw new Error('Prompt Pack must include images[] or IMAGE sections.');\nconst base = { title: pack.title, taskKey: pack.taskKey, notionTask: pack.notionTask, config, images: normalizedImages, videos: normalizedVideos };\nreturn normalizedImages.map((image) => ({ json: { ...base, ...image } }));"
+      },
+      "id": "parse-and-build-image-items",
+      "name": "解析并拆分图片任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        424
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "image-loop",
+      "name": "图片循环",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -320,
+        424
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst os = require('os');\nconst http = require('http');\nconst https = require('https');\nconst { URL } = require('url');\nconst item = $input.first().json;\nfunction responseRootFromItem(source) {\n  if (source.body && typeof source.body === 'object') return source.body;\n  const root = {};\n  for (const key of ['candidates', 'data', 'output', 'result', 'response', 'b64_json', 'b64', 'inlineData', 'inline_data', 'url', 'image_url', 'file_url']) {\n    if (source[key] !== undefined) root[key] = source[key];\n  }\n  return Object.keys(root).length ? root : source;\n}\nfunction addCandidate(candidates, candidate) {\n  if (!candidate) return;\n  const key = candidate.url || `${candidate.mimeType || ''}:${candidate.data || ''}`;\n  if (!key || candidates.some((entry) => (entry.url || `${entry.mimeType || ''}:${entry.data || ''}`) === key)) return;\n  candidates.push(candidate);\n}\nfunction addInline(candidates, inline, source) {\n  if (inline && typeof inline.data === 'string') {\n    addCandidate(candidates, { data: inline.data, mimeType: inline.mimeType || inline.mime_type || 'image/png', source });\n  }\n}\nfunction addB64(candidates, data, mimeType, source) {\n  if (typeof data === 'string' && data.replace(/^data:[^;]+;base64,/, '').replace(/\\s+/g, '').length > 256) {\n    addCandidate(candidates, { data, mimeType: mimeType || 'image/png', source });\n  }\n}\nfunction addImageUrl(candidates, url, source) {\n  if (typeof url === 'string' && /\\.(png|jpe?g|webp|gif)(\\?|$)/i.test(url)) {\n    addCandidate(candidates, { url, source });\n  }\n}\nfunction collectCandidates(root) {\n  if (!root || typeof root !== 'object') return [];\n  const candidates = [];\n  addInline(candidates, root.inlineData, 'root.inlineData');\n  addInline(candidates, root.inline_data, 'root.inline_data');\n  addB64(candidates, root.b64_json || root.b64, 'image/png', 'root.b64');\n  addImageUrl(candidates, root.url || root.image_url || root.file_url, 'root.url');\n\n  const dataItems = Array.isArray(root.data) ? root.data : [];\n  for (const entry of dataItems) {\n    addB64(candidates, entry?.b64_json || entry?.b64, 'image/png', 'data.b64_json');\n    addInline(candidates, entry?.inlineData, 'data.inlineData');\n    addInline(candidates, entry?.inline_data, 'data.inline_data');\n    addImageUrl(candidates, entry?.url || entry?.image_url || entry?.file_url, 'data.url');\n  }\n\n  for (const nested of [root.result, root.response, root.output]) {\n    const entries = Array.isArray(nested) ? nested : [nested];\n    for (const entry of entries) {\n      for (const found of collectCandidates(entry)) addCandidate(candidates, found);\n    }\n  }\n\n  const candidateItems = Array.isArray(root.candidates) ? root.candidates : [];\n  for (const candidate of candidateItems) {\n    addInline(candidates, candidate?.inlineData, 'candidate.inlineData');\n    addInline(candidates, candidate?.inline_data, 'candidate.inline_data');\n    const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [];\n    for (const part of parts) {\n      addInline(candidates, part?.inlineData, 'candidate.part.inlineData');\n      addInline(candidates, part?.inline_data, 'candidate.part.inline_data');\n    }\n  }\n  return candidates;\n}\nfunction imageMimeFromMagic(buffer, fallback = 'image/png') {\n  if (buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';\n  if (buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';\n  if (buffer.length > 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';\n  if (buffer.length > 6 && ['GIF87a', 'GIF89a'].includes(buffer.subarray(0, 6).toString('ascii'))) return 'image/gif';\n  throw new Error(`Decoded image candidate is not a valid image. fallbackMimeType=${fallback}`);\n}\nfunction suffixFromMime(mimeType, url = '') {\n  const cleanUrl = String(url).split('?')[0].toLowerCase();\n  for (const ext of ['.png', '.jpg', '.jpeg', '.webp', '.gif']) if (cleanUrl.endsWith(ext)) return ext === '.jpeg' ? '.jpg' : ext;\n  const mime = String(mimeType || '').toLowerCase();\n  if (mime.includes('jpeg') || mime.includes('jpg')) return '.jpg';\n  if (mime.includes('webp')) return '.webp';\n  if (mime.includes('gif')) return '.gif';\n  return '.png';\n}\nfunction safePart(value) {\n  return String(value || 'yunwu').replace(/[^\\p{L}\\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'yunwu';\n}\nfunction defaultImageSaveRoot() {\n  return path.join(os.homedir(), '.n8n-files', 'image-output');\n}\nfunction resolveLocalPath(value) {\n  const raw = String(value || '').trim();\n  if (!raw || (process.platform !== 'win32' && /^[A-Za-z]:[\\\\/]/.test(raw))) return defaultImageSaveRoot();\n  const home = os.homedir();\n  const expanded = raw\n    .replace(/^~(?=$|[\\\\/])/, home)\n    .replace(/\\$\\{HOME\\}|\\$HOME|%USERPROFILE%|%HOME%/gi, home);\n  return path.resolve(expanded);\n}\nfunction downloadUrl(url, redirectCount = 0) {\n  return new Promise((resolve, reject) => {\n    let parsed;\n    try {\n      parsed = new URL(url);\n    } catch (error) {\n      reject(new Error(`Invalid image URL: ${url}`));\n      return;\n    }\n    const client = parsed.protocol === 'http:' ? http : https;\n    const request = client.get(parsed, { headers: { Accept: 'image/*,*/*' } }, (response) => {\n      const status = response.statusCode || 0;\n      const location = response.headers.location;\n      if ([301, 302, 303, 307, 308].includes(status) && location) {\n        response.resume();\n        if (redirectCount >= 5) {\n          reject(new Error('Too many redirects while downloading image URL.'));\n          return;\n        }\n        resolve(downloadUrl(new URL(location, parsed).toString(), redirectCount + 1));\n        return;\n      }\n      if (status < 200 || status >= 300) {\n        response.resume();\n        reject(new Error(`Failed to download image URL: HTTP ${status}`));\n        return;\n      }\n      const chunks = [];\n      response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));\n      response.on('end', () => resolve({\n        buffer: Buffer.concat(chunks),\n        mimeType: response.headers['content-type'] || 'image/png',\n      }));\n    });\n    request.on('error', (error) => reject(error));\n    request.setTimeout(120000, () => {\n      request.destroy(new Error('Image URL download timed out after 120000ms.'));\n    });\n  });\n}\nconst root = responseRootFromItem(item);\nconst candidates = collectCandidates(root);\nif (!candidates.length) {\n  const keys = Object.keys(root && typeof root === 'object' && !Array.isArray(root) ? root : {}).slice(0, 12).join(',');\n  throw new Error(item.slot + ' completed but Yunwu image response did not include image data. responseKeys:' + keys);\n}\nconst candidate = candidates[0];\nconst saveRoot = resolveLocalPath(item.config?.imageSaveRoot);\nfs.mkdirSync(saveRoot, { recursive: true });\nlet buffer;\nlet mimeType = candidate.mimeType || 'image/png';\nif (candidate.url) {\n  const downloaded = await downloadUrl(candidate.url);\n  buffer = downloaded.buffer;\n  mimeType = downloaded.mimeType || mimeType;\n  if (!String(mimeType || '').toLowerCase().startsWith('image/')) {\n    throw new Error(`Downloaded URL did not return an image. mimeType=${mimeType}; url=${candidate.url}`);\n  }\n} else {\n  buffer = Buffer.from(String(candidate.data || '').replace(/^data:[^;]+;base64,/, '').replace(/\\s+/g, ''), 'base64');\n}\nmimeType = imageMimeFromMagic(buffer, mimeType);\nconst fileName = `${safePart(item.taskKey || item.title)}_image${item.index || 1}_${Date.now()}${suffixFromMime(mimeType, candidate.url || '')}`;\nconst localPath = path.join(saveRoot, fileName);\nfs.writeFileSync(localPath, buffer);\nreturn [{ json: { ...item, imageJobId: item.id || item.slot, fileUrl: candidate.url || '', localPath, fileName, mimeType, imageSource: candidate.source || '' } }];"
+      },
+      "id": "store-image",
+      "name": "保存图片结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ \"Image job failed: \" + ($json.message || JSON.stringify($json.error || $json)) }}"
+      },
+      "id": "image-error",
+      "name": "停止：图片失败",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        576,
+        904
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('解析并拆分图片任务').first().json;\nconst readNodeItems = (nodeName) => {\n  try {\n    return $items(nodeName);\n  } catch (error) {\n    return [];\n  }\n};\nconst fromSaveNode = readNodeItems('保存图片结果').map((item) => item.json || {});\nconst fromInput = $input.all().map((item) => item.json || {});\nconst seen = new Set();\nconst completed = [...fromSaveNode, ...fromInput]\n  .filter((item) => item.fileUrl || item.localPath || item.imageJobId)\n  .filter((item) => !base.taskKey || item.taskKey === base.taskKey)\n  .filter((item) => {\n    const key = `${item.index || ''}:${item.imageJobId || ''}:${item.fileUrl || item.localPath || ''}`;\n    if (seen.has(key)) return false;\n    seen.add(key);\n    return true;\n  })\n  .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));\nif (!completed.length) throw new Error('没有可汇总的图片结果：节点“保存图片结果”尚未执行或没有成功图片。');\nreturn [{ json: { ...base, imageResults: completed } }];"
+      },
+      "id": "collect-images",
+      "name": "汇总图片结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $input.first().json;\nconst byIndex = new Map(base.imageResults.map((img) => [Number(img.index), img]));\nconst tasks = (base.videos || []).map((video) => {\n  const first = video.firstImage ? byIndex.get(Number(video.firstImage)) : null;\n  const last = video.lastImage ? byIndex.get(Number(video.lastImage)) : null;\n  if (video.firstImage && !first) throw new Error(video.slot + ' references missing firstImage ' + video.firstImage + '.');\n  if (video.lastImage && !last) throw new Error(video.slot + ' references missing lastImage ' + video.lastImage + '.');\n  return { json: {\n    title: base.title,\n    taskKey: base.taskKey,\n    notionTask: base.notionTask,\n    config: base.config,\n    imageResults: base.imageResults,\n    ...video,\n    firstFileUrl: first?.fileUrl || '',\n    lastFileUrl: last?.fileUrl || '',\n    firstLocalPath: first?.localPath || '',\n    lastLocalPath: last?.localPath || '',\n    firstFileName: first?.fileName || 'first.png',\n    lastFileName: last?.fileName || 'last.png',\n    noVideos: false,\n  } };\n});\nreturn tasks.length ? tasks : [{ json: { title: base.title, taskKey: base.taskKey, notionTask: base.notionTask, config: base.config, imageResults: base.imageResults, noVideos: true } }];"
+      },
+      "id": "video-items",
+      "name": "拆分视频任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "video-loop",
+      "name": "视频循环",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        352,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (item.noVideos) return [{ json: item }];\nconst videoId = String(item.id || item.video_id || item.videoId || item.result?.id || '').trim();\nconst remoteStatus = String(item.status || item.result?.status || '').toLowerCase();\nif (!videoId) throw new Error(item.slot + ' completed but Yunwu video response did not include id.');\nconst contentTemplate = item.config?.videoContentUrl || 'https://yunwu.ai/v1/videos/{id}/content';\nconst videoFileUrl = contentTemplate.replace('{id}', encodeURIComponent(videoId));\nreturn [{ json: { ...item, videoPollId: videoId, videoFileUrl, videoLocalPath: '', videoFileName: `${videoId}.mp4`, videoMimeType: 'video/mp4', videoStatus: remoteStatus || 'completed' } }];"
+      },
+      "id": "store-video",
+      "name": "保存视频结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -416
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ \"Video job failed: \" + ($json.message || JSON.stringify($json.error || $json)) }}"
+      },
+      "id": "video-error",
+      "name": "停止：视频失败",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        800,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const imageBase = $('汇总图片结果').first().json;\nlet videoResults = [];\ntry {\n  videoResults = $items('保存视频结果')\n    .map((item) => item.json)\n    .filter((item) => !item.noVideos && (!imageBase.taskKey || item.taskKey === imageBase.taskKey))\n    .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));\n} catch (error) {}\nconst finalVideo = videoResults.at(-1);\nif (!finalVideo) throw new Error('No final video was completed.');\nconst video = finalVideo.videoLocalPath || finalVideo.videoFileUrl;\nif (!video) throw new Error('Final video completed but no video file path or URL was saved.');\nreturn [{ json: { video } }];"
+      },
+      "id": "final-summary",
+      "name": "仅输出最终视频",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        -336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\nconst done = new Set(['completed', 'succeeded', 'success']);\nconst failed = new Set(['failed', 'error', 'timeout', 'cancelled', 'canceled', 'expired']);\nfunction jobIdOf(source) {\n  return String(source.id || source.image_id || source.imageId || source.job_id || source.jobId || source.task_id || source.taskId || source.result?.id || source.body?.id || '').trim();\n}\nfunction statusOf(source) {\n  const body = source.body || {};\n  return String(source.status || body.status || source.result?.status || '').toLowerCase();\n}\nfunction hasImage(source) {\n  const body = source.body || {};\n  return Boolean(source.candidates || source.data || source.b64_json || source.b64 || source.inlineData || source.inline_data || source.url || source.image_url || source.file_url || body.candidates || body.data || body.b64_json || body.b64 || body.inlineData || body.inline_data || body.url || body.image_url || body.file_url);\n}\nfunction mergeResponse(source, response) {\n  const body = response && typeof response === 'object' ? response : { body: response };\n  return { ...source, ...body, status: statusOf(body) || statusOf(source), imageJobId: jobIdOf(body) || jobIdOf(source) };\n}\nlet current = item;\nlet currentStatus = statusOf(current);\nif (hasImage(current) || done.has(currentStatus) || failed.has(currentStatus)) return [{ json: current }];\nconst imageId = jobIdOf(current);\nconst explicitUrl = current.pollUrl || current.statusUrl || current.config?.imageStatusUrl;\nconst fallbackUrl = imageId && current.config?.imageApiUrl ? String(current.config.imageApiUrl).replace(/\\/+$/, '') + '/' + encodeURIComponent(imageId) : '';\nconst statusUrl = explicitUrl ? String(explicitUrl).replace('{id}', encodeURIComponent(imageId)) : fallbackUrl;\nif (!statusUrl) return [{ json: { ...current, status: 'failed', message: 'Image job is pending but no imageStatusUrl or id is available for polling.' } }];\nconst timeoutMs = Number(current.config?.imageTimeoutMs || 20 * 60 * 1000);\nconst intervalMs = Number(current.config?.pollIntervalMs || 10000);\nconst deadline = Date.now() + timeoutMs;\nconst apiKey = current.config?.imageApiKey || current.config?.apiKey || '';\nwhile (Date.now() < deadline) {\n  try {\n    const response = await $helpers.httpRequest({\n      method: 'GET',\n      url: statusUrl,\n      headers: {\n        Accept: 'application/json',\n        Authorization: apiKey ? 'Bearer ' + apiKey : '',\n        'x-goog-api-key': apiKey,\n      },\n      json: true,\n      timeout: 300000,\n    });\n    current = mergeResponse(current, response);\n  } catch (error) {\n    return [{ json: { ...current, status: 'failed', message: error.message || String(error), error: { message: error.message || String(error) } } }];\n  }\n  currentStatus = statusOf(current);\n  if (hasImage(current) || done.has(currentStatus) || failed.has(currentStatus)) return [{ json: current }];\n  await sleep(intervalMs);\n}\nreturn [{ json: { ...current, status: 'timeout', message: 'Image job polling timed out after ' + timeoutMs + 'ms.' } }];"
+      },
+      "id": "poll-image-subflow",
+      "name": "轮询图片任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ (() => { const body = $json.body || {}; const status = String($json.status || body.status || $json.result?.status || \"\").toLowerCase(); const hasImage = Boolean($json.candidates || $json.data || $json.b64_json || $json.b64 || $json.inlineData || $json.inline_data || $json.url || $json.image_url || $json.file_url || body.candidates || body.data || body.b64_json || body.b64 || body.inlineData || body.inline_data || body.url || body.image_url || body.file_url); return (hasImage || [\"completed\", \"succeeded\", \"success\"].includes(status)) ? 0 : ([\"failed\", \"error\", \"timeout\", \"cancelled\", \"canceled\", \"expired\"].includes(status) ? 1 : 2); })() }}"
+      },
+      "id": "image-status-route",
+      "name": "图片状态路由",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        856
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (item.noVideos) return [{ json: item }];\nconst sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\nconst done = new Set(['completed', 'succeeded', 'success']);\nconst failed = new Set(['failed', 'error', 'timeout', 'cancelled', 'canceled', 'expired']);\nfunction jobIdOf(source) {\n  return String(source.id || source.video_id || source.videoId || source.job_id || source.jobId || source.task_id || source.taskId || source.result?.id || source.body?.id || '').trim();\n}\nfunction statusOf(source) {\n  const body = source.body || {};\n  return String(source.status || body.status || source.result?.status || '').toLowerCase();\n}\nfunction mergeResponse(source, response) {\n  const body = response && typeof response === 'object' ? response : { body: response };\n  return { ...source, ...body, status: statusOf(body) || statusOf(source), videoPollId: jobIdOf(body) || jobIdOf(source) };\n}\nlet current = item;\nconst videoId = jobIdOf(current);\nif (!videoId) return [{ json: { ...current, status: 'failed', message: 'Video job is missing id and cannot be polled.' } }];\nlet currentStatus = statusOf(current);\nif (done.has(currentStatus) || failed.has(currentStatus)) return [{ json: current }];\nconst timeoutMs = Number(current.config?.videoTimeoutMs || 40 * 60 * 1000);\nconst intervalMs = Number(current.config?.pollIntervalMs || 10000);\nconst deadline = Date.now() + timeoutMs;\nconst statusUrl = String(current.config?.videoStatusUrl || 'https://yunwu.ai/v1/videos/{id}').replace('{id}', encodeURIComponent(videoId));\nconst apiKey = current.config?.videoApiKey || current.config?.apiKey || '';\nwhile (Date.now() < deadline) {\n  try {\n    const response = await $helpers.httpRequest({\n      method: 'GET',\n      url: statusUrl,\n      headers: {\n        Accept: 'application/json',\n        Authorization: apiKey ? 'Bearer ' + apiKey : '',\n      },\n      json: true,\n      timeout: 300000,\n    });\n    current = mergeResponse(current, response);\n  } catch (error) {\n    return [{ json: { ...current, status: 'failed', message: error.message || String(error), error: { message: error.message || String(error) } } }];\n  }\n  currentStatus = statusOf(current);\n  if (done.has(currentStatus) || failed.has(currentStatus)) return [{ json: current }];\n  await sleep(intervalMs);\n}\nreturn [{ json: { ...current, status: 'timeout', message: 'Video job polling timed out after ' + timeoutMs + 'ms.' } }];"
+      },
+      "id": "poll-video-subflow",
+      "name": "轮询视频任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        88
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ [\"completed\", \"succeeded\", \"success\"].includes(String($json.status || \"\").toLowerCase()) ? 0 : (([\"failed\", \"error\", \"timeout\", \"cancelled\", \"canceled\", \"expired\"].includes(String($json.status || \"\").toLowerCase())) ? 1 : 2) }}"
+      },
+      "id": "video-status-route",
+      "name": "视频状态路由",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.imageModel === 'gpt-image-2-all' ? $json.config.imageApiUrl : ($json.config.geminiApiUrl.replace('{model}', $json.config.imageModel) + ($json.config.geminiApiUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent($json.config.imageApiKey || $json.config.apiKey || '')) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ ($json.config.imageApiKey || $json.config.apiKey) ? 'Bearer ' + ($json.config.imageApiKey || $json.config.apiKey) : '' }}"
+            },
+            {
+              "name": "x-goog-api-key",
+              "value": "={{ $json.config.imageApiKey || $json.config.apiKey || \"\" }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.config.imageModel === 'gpt-image-2-all' ? { model: $json.config.imageModel, prompt: $json.prompt, n: $json.config.imageN, size: $json.config.imageSize || 'auto', aspect_ratio: $json.config.imageAspectRatio || '9:16' } : { contents: [{ role: 'user', parts: [{ text: ($json.referenceInlineData ? 'Use the attached previous image as the exact composition and perspective reference. Keep the same camera position, framing, spatial layout, and major object placement while applying this next transformation step.\\n\\n' : '') + $json.prompt }].concat($json.referenceInlineData ? [{ inline_data: { mime_type: $json.referenceMimeType || 'image/jpeg', data: $json.referenceInlineData } }] : []) }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: $json.config.imageAspectRatio || '9:16', imageSize: $json.config.geminiImageSize || '512' } } } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "create-image",
+      "name": "创建图片任务",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        128,
+        544
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "merge-image-create-context",
+      "name": "合并图片创建上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        352,
+        472
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.firstLocalPath || $json.firstFileUrl }}",
+        "dataPropertyName": "firstFrame"
+      },
+      "id": "download-first-frame",
+      "name": "下载首帧",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -128
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "merge-video-first-frame",
+      "name": "合并首帧上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1024,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ ($json.lastLocalPath || $json.lastFileUrl) ? 0 : 1 }}"
+      },
+      "id": "has-last-frame",
+      "name": "是否存在尾帧",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.lastLocalPath || $json.lastFileUrl }}",
+        "dataPropertyName": "lastFrame"
+      },
+      "id": "download-last-frame",
+      "name": "下载尾帧",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        -272
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "merge-video-last-frame",
+      "name": "合并尾帧上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1696,
+        -344
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.videoApiUrl || \"https://yunwu.ai/v1/videos\" }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ ($json.config.videoApiKey || $json.config.apiKey) ? \"Bearer \" + ($json.config.videoApiKey || $json.config.apiKey) : \"\" }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $json.config.videoModel }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "seconds",
+              "value": "={{ $json.config.videoSeconds }}"
+            },
+            {
+              "name": "size",
+              "value": "={{ $json.config.videoSize }}"
+            },
+            {
+              "name": "watermark",
+              "value": "={{ $json.config.videoWatermark }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "input_reference",
+              "inputDataFieldName": "firstFrame"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "create-video-first-only",
+      "name": "创建视频任务：首帧",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        40
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.videoApiUrl || \"https://yunwu.ai/v1/videos\" }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ ($json.config.videoApiKey || $json.config.apiKey) ? \"Bearer \" + ($json.config.videoApiKey || $json.config.apiKey) : \"\" }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $json.config.videoModel }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "seconds",
+              "value": "={{ $json.config.videoSeconds }}"
+            },
+            {
+              "name": "size",
+              "value": "={{ $json.config.videoSize }}"
+            },
+            {
+              "name": "watermark",
+              "value": "={{ $json.config.videoWatermark }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "input_reference[]",
+              "inputDataFieldName": "firstFrame"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "input_reference[]",
+              "inputDataFieldName": "lastFrame"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "create-video-first-last",
+      "name": "创建视频任务：首尾帧",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        -416
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "merge-video-create-context",
+      "name": "合并视频创建上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2144,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "config.apiKey（云雾 API Key）",
+              "value": "sk-nbCUZRwvnPhncU910TD5DY7NunbsEnsngaFI1l6uIvnPvkUl"
+            },
+            {
+              "name": "config.imageApiKey（云雾图片令牌）",
+              "value": "sk-fqFiyu73q0txUSPtlLQ0n9aTkRZepHA8ucOIrzwkBMG2WN8I"
+            },
+            {
+              "name": "config.videoApiKey（云雾视频令牌）",
+              "value": "sk-nbCUZRwvnPhncU910TD5DY7NunbsEnsngaFI1l6uIvnPvkUl"
+            },
+            {
+              "name": "config.imageApiUrl（云雾官方图片端点）",
+              "value": "https://yunwu.ai/v1/images/generations"
+            },
+            {
+              "name": "config.geminiApiUrl（云雾 Gemini 图片端点）",
+              "value": "https://yunwu.ai/v1beta/models/{model}:generateContent"
+            },
+            {
+              "name": "config.videoApiUrl（云雾官方视频端点）",
+              "value": "https://yunwu.ai/v1/videos"
+            },
+            {
+              "name": "config.videoStatusUrl（云雾视频状态端点）",
+              "value": "https://yunwu.ai/v1/videos/{id}"
+            },
+            {
+              "name": "config.videoContentUrl（云雾视频下载端点）",
+              "value": "https://yunwu.ai/v1/videos/{id}/content"
+            },
+            {
+              "name": "config.imageSaveRoot（图片保存目录）",
+              "value": "~/.n8n-files/image-output"
+            },
+            {
+              "name": "config.imageModel（图片模型）",
+              "value": "gemini-3.1-flash-image-preview"
+            },
+            {
+              "name": "config.imageAspectRatio（图片比例）",
+              "value": "9:16"
+            },
+            {
+              "name": "config.imageSize（GPT 图片尺寸）",
+              "value": "auto"
+            },
+            {
+              "name": "config.geminiImageSize（Gemini 图片清晰度）",
+              "value": "512"
+            },
+            {
+              "name": "config.videoModel（视频模型）",
+              "value": "veo_3_1-fast"
+            },
+            {
+              "name": "config.videoSeconds（视频时长）",
+              "value": "8"
+            },
+            {
+              "name": "config.videoSize（视频比例）",
+              "value": "9x16"
+            },
+            {
+              "name": "config.videoWatermark（水印开关）",
+              "value": "false"
+            }
+          ],
+          "number": [
+            {
+              "name": "config.imageN（图片张数）",
+              "value": 1
+            },
+            {
+              "name": "config.pollIntervalMs（轮询间隔毫秒）",
+              "value": 10000
+            },
+            {
+              "name": "config.imageTimeoutMs（图片超时毫秒）",
+              "value": 1200000
+            },
+            {
+              "name": "config.videoTimeoutMs（视频超时毫秒）",
+              "value": 2400000
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "id": "unified-config",
+      "name": "统一配置",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        424
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        424
+      ],
+      "id": "5f3b043d-9fdf-4699-bdbb-8bd24be941ed",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst os = require('os');\nconst item = $input.item.json;\nfunction safePart(value) {\n  return String(value || 'yunwu').replace(/[^\\p{L}\\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'yunwu';\n}\nfunction defaultImageSaveRoot() {\n  return path.join(os.homedir(), '.n8n-files', 'image-output');\n}\nfunction resolveLocalPath(value) {\n  const raw = String(value || '').trim();\n  if (!raw || (process.platform !== 'win32' && /^[A-Za-z]:[\\\\/]/.test(raw))) return defaultImageSaveRoot();\n  const home = os.homedir();\n  const expanded = raw\n    .replace(/^~(?=$|[\\\\/])/, home)\n    .replace(/\\$\\{HOME\\}|\\$HOME|%USERPROFILE%|%HOME%/gi, home);\n  return path.resolve(expanded);\n}\nfunction mimeFromExt(filePath) {\n  const ext = path.extname(filePath).toLowerCase();\n  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';\n  if (ext === '.webp') return 'image/webp';\n  if (ext === '.gif') return 'image/gif';\n  return 'image/png';\n}\nfunction isImageBytes(buffer) {\n  const isJpeg = buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;\n  const isPng = buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));\n  const isWebp = buffer.length > 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';\n  const isGif = buffer.length > 6 && ['GIF87a', 'GIF89a'].includes(buffer.subarray(0, 6).toString('ascii'));\n  return isJpeg || isPng || isWebp || isGif;\n}\nfunction assertImageBytes(buffer, filePath) {\n  if (!isImageBytes(buffer)) throw new Error(`Previous reference file is not a valid image: ${filePath}`);\n}\nfunction quarantineInvalidImage(filePath, saveRoot) {\n  const invalidRoot = path.join(saveRoot, 'invalid-html');\n  fs.mkdirSync(invalidRoot, { recursive: true });\n  const target = path.join(invalidRoot, path.basename(filePath));\n  if (path.resolve(filePath) === path.resolve(target)) return target;\n  try {\n    if (fs.existsSync(target)) fs.unlinkSync(target);\n    fs.renameSync(filePath, target);\n    return target;\n  } catch (error) {\n    return filePath;\n  }\n}\nfunction latestPreviousImage(saveRoot, stem, previousIndex) {\n  if (!fs.existsSync(saveRoot)) return null;\n  const prefix = `${stem}_image${previousIndex}_`;\n  const files = fs.readdirSync(saveRoot)\n    .filter((name) => name.startsWith(prefix) && /\\.(png|jpg|jpeg|webp|gif)$/i.test(name))\n    .map((name) => {\n      const fullPath = path.join(saveRoot, name);\n      return { fullPath, mtimeMs: fs.statSync(fullPath).mtimeMs };\n    })\n    .sort((a, b) => b.mtimeMs - a.mtimeMs);\n  for (const file of files) {\n    const bytes = fs.readFileSync(file.fullPath);\n    if (isImageBytes(bytes)) return file.fullPath;\n    // Quarantine stale HTML/error files from earlier failed runs and continue scanning.\n    quarantineInvalidImage(file.fullPath, saveRoot);\n  }\n  return null;\n}\nconst index = Number(item.index || 1);\nif (index <= 1) {\n  return { json: { ...item, imageMode: 'text-to-image', referenceLocalPath: '', referenceMimeType: '', referenceInlineData: '' } };\n}\nconst saveRoot = resolveLocalPath(item.config?.imageSaveRoot);\nconst stem = safePart(item.taskKey || item.title);\nconst previousPath = latestPreviousImage(saveRoot, stem, index - 1);\nif (!previousPath) throw new Error(`${item.slot || 'IMAGE ' + index} requires previous image ${index - 1}, but no valid saved image was found in ${saveRoot}.`);\nconst referenceBytes = fs.readFileSync(previousPath);\nassertImageBytes(referenceBytes, previousPath);\nreturn { json: {\n  ...item,\n  imageMode: 'image-to-image',\n  referenceLocalPath: previousPath,\n  referenceMimeType: mimeFromExt(previousPath),\n  referenceInlineData: referenceBytes.toString('base64'),\n} };"
+      },
+      "id": "prepare-image-reference",
+      "name": "准备图片参考",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        472
+      ]
+    }
+  ],
+  "connections": {
+    "读取 Notion 任务": {
+      "main": [
+        [
+          {
+            "node": "统一配置",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析并拆分图片任务": {
+      "main": [
+        [
+          {
+            "node": "图片循环",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "图片循环": {
+      "main": [
+        [
+          {
+            "node": "汇总图片结果",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "准备图片参考",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "创建图片任务": {
+      "main": [
+        [
+          {
+            "node": "合并图片创建上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并图片创建上下文": {
+      "main": [
+        [
+          {
+            "node": "图片状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "轮询图片任务": {
+      "main": [
+        [
+          {
+            "node": "图片状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "图片状态路由": {
+      "main": [
+        [
+          {
+            "node": "保存图片结果",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "停止：图片失败",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "轮询图片任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存图片结果": {
+      "main": [
+        [
+          {
+            "node": "图片循环",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "汇总图片结果": {
+      "main": [
+        [
+          {
+            "node": "拆分视频任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "拆分视频任务": {
+      "main": [
+        [
+          {
+            "node": "视频循环",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "视频循环": {
+      "main": [
+        [
+          {
+            "node": "仅输出最终视频",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "视频状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "视频状态路由": {
+      "main": [
+        [
+          {
+            "node": "保存视频结果",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "停止：视频失败",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "下载首帧",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并首帧上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载首帧": {
+      "main": [
+        [
+          {
+            "node": "合并首帧上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并首帧上下文": {
+      "main": [
+        [
+          {
+            "node": "是否存在尾帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "是否存在尾帧": {
+      "main": [
+        [
+          {
+            "node": "下载尾帧",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并尾帧上下文",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "创建视频任务：首帧",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载尾帧": {
+      "main": [
+        [
+          {
+            "node": "合并尾帧上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并尾帧上下文": {
+      "main": [
+        [
+          {
+            "node": "创建视频任务：首尾帧",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "创建视频任务：首帧": {
+      "main": [
+        [
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "创建视频任务：首尾帧": {
+      "main": [
+        [
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并视频创建上下文": {
+      "main": [
+        [
+          {
+            "node": "轮询视频任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "轮询视频任务": {
+      "main": [
+        [
+          {
+            "node": "视频状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存视频结果": {
+      "main": [
+        [
+          {
+            "node": "视频循环",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "统一配置": {
+      "main": [
+        [
+          {
+            "node": "解析并拆分图片任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "读取 Notion 任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备图片参考": {
+      "main": [
+        [
+          {
+            "node": "创建图片任务",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并图片创建上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "staticData": {},
+  "pinData": {},
+  "versionId": "0255e53a-2a49-4244-9186-e35a2a23879e",
+  "versionCounter": 92,
+  "updatedAt": "2026-04-24 08:45:06.739"
+}

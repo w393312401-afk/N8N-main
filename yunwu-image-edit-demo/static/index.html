@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yunwu 图像生成</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=Noto+Serif+SC:wght@600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+
+      <!-- ══ 左侧边栏：配置区 ══ -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-mark">YW</div>
+          <div class="logo-text">
+            <span class="logo-title">Yunwu</span>
+            <span class="logo-sub">Image Studio</span>
+          </div>
+          <div id="health-dot" class="health-dot" title="服务状态"></div>
+        </div>
+
+        <!-- 服务状态横幅 -->
+        <div id="health-banner" class="health-banner notice notice-neutral">正在检查服务...</div>
+
+        <section class="overview-card" aria-label="工作台概览">
+          <p class="overview-kicker">Local Studio</p>
+          <p class="overview-copy">
+            左侧只负责模型、参数和保存策略。中间写清视觉目标。右侧盯任务和历史，不要把比例、尺寸再塞进提示词。
+          </p>
+          <div class="overview-tags">
+            <span class="info-chip">并发提交</span>
+            <span class="info-chip">历史图拖拽</span>
+            <span class="info-chip">自动落盘</span>
+          </div>
+        </section>
+
+        <!-- 模型切换 -->
+        <div class="sidebar-section" id="image-model-section">
+          <label class="section-label">模型</label>
+          <div class="model-tabs">
+            <label class="model-tab">
+              <input type="radio" name="model-radio" value="gemini-3.1-flash-image-preview" />
+              <span class="model-tab-inner">
+                <span class="model-tab-icon">✦</span>
+                <span class="model-tab-text">
+                  <span class="model-tab-name">Gemini</span>
+                  <span class="model-tab-copy">快速预览 · 支持参考图</span>
+                </span>
+              </span>
+            </label>
+            <label class="model-tab">
+              <input type="radio" name="model-radio" value="gpt-image-2-all" checked />
+              <span class="model-tab-inner">
+                <span class="model-tab-icon">◈</span>
+                <span class="model-tab-text">
+                  <span class="model-tab-name">GPT Image</span>
+                  <span class="model-tab-copy">多比例 · 可加蒙版</span>
+                </span>
+              </span>
+            </label>
+          </div>
+          <!-- 隐藏 select，供 JS 继续引用 -->
+          <select id="model" name="model" class="hidden-select" aria-hidden="true">
+            <option value="gemini-3.1-flash-image-preview">gemini-3.1-flash-image-preview</option>
+            <option value="gpt-image-2-all" selected>gpt-image-2-all</option>
+          </select>
+        </div>
+
+        <!-- 模式切换 -->
+        <div class="sidebar-section">
+          <label class="section-label">工作模式</label>
+          <div class="mode-switch" role="tablist" aria-label="生成模式切换">
+            <button type="button" class="mode-button is-active" data-mode="generate">
+              <span class="mode-icon">✎</span> 文生图
+            </button>
+            <button type="button" class="mode-button" data-mode="edit">
+              <span class="mode-icon">⊕</span> 图生图
+            </button>
+            <button type="button" class="mode-button" data-mode="video">
+              <span class="mode-icon">▶</span> 视频
+            </button>
+          </div>
+          <p class="mode-note">图像和视频共用同一工作台。参数单独控制，提示词只写内容、镜头、动作和质感。</p>
+        </div>
+
+        <!-- 模型参数 -->
+        <div id="model-summary" class="model-notice"></div>
+
+        <!-- GPT 参数区 -->
+        <div class="advanced-grid" id="gpt-fields" hidden>
+          <div class="sidebar-section half">
+            <label class="section-label" for="n">数量 n</label>
+            <input id="n" name="n" type="number" min="1" max="10" step="1" value="1" class="ctrl-input" />
+          </div>
+          <div class="sidebar-section half">
+            <label class="section-label" for="gpt-aspect-ratio">比例</label>
+            <select id="gpt-aspect-ratio" name="aspect_ratio" class="ctrl-select">
+              <option value="1:1">1:1</option>
+              <option value="1:4">1:4</option>
+              <option value="4:1">4:1</option>
+              <option value="1:8">1:8</option>
+              <option value="8:1">8:1</option>
+              <option value="2:3">2:3</option>
+              <option value="3:2">3:2</option>
+              <option value="3:4">3:4</option>
+              <option value="4:3">4:3</option>
+              <option value="4:5">4:5</option>
+              <option value="5:4">5:4</option>
+              <option value="9:16" selected>9:16</option>
+              <option value="16:9">16:9</option>
+              <option value="21:9">21:9</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Gemini 参数区 -->
+        <div class="advanced-grid" id="gemini-fields">
+          <div class="sidebar-section half">
+            <label class="section-label" for="aspect-ratio">比例</label>
+            <select id="aspect-ratio" name="aspect_ratio" class="ctrl-select">
+              <option value="1:1">1:1</option>
+              <option value="1:4">1:4</option>
+              <option value="4:1">4:1</option>
+              <option value="1:8">1:8</option>
+              <option value="8:1">8:1</option>
+              <option value="2:3">2:3</option>
+              <option value="3:2">3:2</option>
+              <option value="3:4">3:4</option>
+              <option value="4:3">4:3</option>
+              <option value="4:5">4:5</option>
+              <option value="5:4">5:4</option>
+              <option value="9:16" selected>9:16</option>
+              <option value="16:9">16:9</option>
+              <option value="21:9">21:9</option>
+            </select>
+          </div>
+          <div class="sidebar-section half">
+            <label class="section-label" for="image-size">分辨率</label>
+            <select id="image-size" name="image_size" class="ctrl-select">
+              <option value="512" selected>512（0.5K）</option>
+              <option value="1K">1K</option>
+              <option value="2K">2K</option>
+              <option value="4K">4K</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 视频参数区 -->
+        <div class="advanced-grid" id="video-fields" hidden>
+          <div class="sidebar-section half">
+            <label class="section-label" for="video-model">视频模型</label>
+            <select id="video-model" name="video_model" class="ctrl-select">
+              <option value="veo_3_1" selected>veo_3_1</option>
+              <option value="veo_3_1-fast">veo_3_1-fast</option>
+            </select>
+          </div>
+          <div class="sidebar-section half">
+            <label class="section-label" for="video-seconds">时长</label>
+            <select id="video-seconds" name="video_seconds" class="ctrl-select">
+              <option value="4">4 秒</option>
+              <option value="8" selected>8 秒</option>
+              <option value="12">12 秒</option>
+            </select>
+          </div>
+          <div class="sidebar-section half">
+            <label class="section-label" for="video-size">画幅</label>
+            <select id="video-size" name="video_size" class="ctrl-select">
+              <option value="16x9" selected>16:9 横屏</option>
+              <option value="9x16">9:16 竖屏</option>
+              <option value="1280x720">1280×720</option>
+              <option value="720x1280">720×1280</option>
+            </select>
+          </div>
+          <div class="sidebar-section half">
+            <label class="section-label" for="video-watermark">水印</label>
+            <select id="video-watermark" name="video_watermark" class="ctrl-select">
+              <option value="false" selected>关闭</option>
+              <option value="true">开启</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 设置折叠区 -->
+        <div class="settings-accordion">
+          <details class="accordion-item" id="key-panel">
+            <summary class="accordion-summary">
+              <span class="accordion-icon">🔑</span> API 密钥
+              <span class="accordion-arrow">›</span>
+            </summary>
+            <div class="accordion-body">
+              <input
+                id="api-key-input"
+                type="password"
+                autocomplete="off"
+                placeholder="输入新的 API Key"
+                class="ctrl-input"
+              />
+              <label class="checkbox-field">
+                <input id="api-key-persist" type="checkbox" checked />
+                <span>保存到本地配置</span>
+              </label>
+              <div class="accordion-actions">
+                <button type="button" class="accent-button" id="save-api-key">保存密钥</button>
+                <p class="action-msg" id="api-key-message"></p>
+              </div>
+            </div>
+          </details>
+
+          <details class="accordion-item" id="save-dir-panel">
+            <summary class="accordion-summary">
+              <span class="accordion-icon">📁</span> 保存路径
+              <span class="accordion-arrow">›</span>
+            </summary>
+            <div class="accordion-body">
+              <div class="path-display" id="save-dir-current">等待服务返回...</div>
+              <input
+                id="save-dir-input"
+                type="text"
+                autocomplete="off"
+                placeholder="例如：/Users/me/AI-Outputs"
+                class="ctrl-input"
+              />
+              <label class="checkbox-field">
+                <input id="save-dir-persist" type="checkbox" checked />
+                <span>保存到本地配置</span>
+              </label>
+              <div class="accordion-actions">
+                <button type="button" class="accent-button" id="save-save-dir">应用路径</button>
+                <p class="action-msg" id="save-dir-message"></p>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="sidebar-footer">
+          <button type="button" class="ghost-mini" id="refresh-health">⟳ 重新检查服务</button>
+        </div>
+      </aside>
+
+      <!-- ══ 中间：提示词 + 图片上传 + 提交 ══ -->
+      <main class="main-panel">
+        <header class="main-header">
+          <div class="main-header-copy">
+            <p class="panel-kicker">Compose</p>
+            <h1 class="main-title">生成台</h1>
+            <p class="main-copy">先定目标，再补参考图或关键帧。含糊提示词不会给你“创意感”，只会给脏结果。</p>
+          </div>
+          <div class="main-badges" aria-label="当前能力">
+            <span class="badge-soft">本地代理</span>
+            <span class="badge-soft">即时校验</span>
+            <span class="badge-soft">多任务并发</span>
+          </div>
+        </header>
+
+        <form id="image-form" novalidate class="compose-form">
+
+          <!-- 上传区（图生图模式） -->
+          <div id="edit-fields" hidden>
+            <div class="upload-row" id="upload-edit-fields">
+              <label class="upload-card" id="image-card">
+                <div class="upload-card-header">
+                  <span class="upload-card-label" id="image-label">参考图</span>
+                  <span class="upload-card-hint" id="image-hint">PNG / JPG / WEBP，最大 25 MB</span>
+                </div>
+                <input
+                  id="image"
+                  name="image"
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                />
+                <div class="preview-box" id="image-preview">
+                  <span class="preview-placeholder">
+                    <span class="preview-icon">🖼</span>
+                    <span>拖入历史图<br/>或点击选择</span>
+                  </span>
+                </div>
+                <div class="meta-text" id="image-meta"></div>
+              </label>
+
+              <label class="upload-card" id="video-end-card" hidden>
+                <div class="upload-card-header">
+                  <span class="upload-card-label">尾帧（可选）</span>
+                  <span class="upload-card-hint" id="video-end-hint">只在视频模式使用，留空则不启用首尾帧约束</span>
+                </div>
+                <input
+                  id="video-end-image"
+                  name="video_end_image"
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                />
+                <div class="preview-box" id="video-end-preview">
+                  <span class="preview-placeholder">
+                    <span class="preview-icon">🎬</span>
+                    <span>拖入历史图<br/>或点击选择尾帧</span>
+                  </span>
+                </div>
+                <div class="meta-text" id="video-end-meta"></div>
+              </label>
+
+              <label class="upload-card" id="mask-card">
+                <div class="upload-card-header">
+                  <span class="upload-card-label">蒙版 PNG</span>
+                  <span class="upload-card-hint">仅 GPT 图生图，可选</span>
+                </div>
+                <input id="mask" name="mask" type="file" accept=".png,image/png" />
+                <div class="preview-box" id="mask-preview">
+                  <span class="preview-placeholder">
+                    <span class="preview-icon">◻</span>
+                    <span>点击选择蒙版</span>
+                  </span>
+                </div>
+                <div class="meta-text" id="mask-meta"></div>
+              </label>
+            </div>
+            <p class="drop-helper" id="reference-helper">右侧历史图可直接拖入“参考图”卡片，少做重复上传。</p>
+          </div>
+
+          <!-- 提示词区 -->
+          <div class="prompt-area">
+            <div class="prompt-toolbar">
+              <label class="section-label" for="prompt">提示词</label>
+              <span class="char-counter" id="prompt-char-count">0 / 2500</span>
+            </div>
+            <textarea
+              id="prompt"
+              name="prompt"
+              rows="5"
+              maxlength="2500"
+              placeholder="描述你想生成的图像，例如：保留主体结构，把场景改成晨雾森林，柔和体积光，电影级质感。"
+              required
+            ></textarea>
+            <span class="field-hint" id="prompt-hint">必填，最大 2500 字符</span>
+          </div>
+
+          <!-- 错误提示 -->
+          <div id="form-errors" class="notice notice-warning" hidden></div>
+
+          <!-- 提交按钮 -->
+          <div class="submit-row">
+            <button type="submit" id="submit-button" class="primary-button">
+              <span class="btn-icon">▶</span>
+              <span id="submit-label">提交文生图</span>
+            </button>
+            <p class="submit-hint" id="submit-copy">等待服务状态检查...</p>
+          </div>
+        </form>
+      </main>
+
+      <!-- ══ 右侧：结果 + 历史 ══ -->
+      <aside class="result-panel">
+
+        <!-- 任务状态头部 -->
+        <div class="result-header">
+          <div class="result-header-copy">
+            <h2 class="result-title">结果</h2>
+            <p class="result-copy">任务在后台并发执行。点任务卡切换查看，不会互相打断。</p>
+          </div>
+          <span id="request-state" class="status-pill status-neutral">等待提交</span>
+        </div>
+
+        <!-- 并发任务列表 -->
+        <section id="jobs-panel" class="jobs-panel">
+          <div class="jobs-panel-header">
+            <div>
+              <span class="jobs-title">并发任务</span>
+              <p class="jobs-copy">这里显示当前会话中的全部任务。</p>
+            </div>
+          </div>
+          <div id="jobs-list" class="jobs-list"></div>
+          <p id="jobs-empty" class="empty-hint">暂无任务</p>
+        </section>
+
+        <!-- 状态消息 -->
+        <div id="result-message" class="result-notice notice notice-neutral">提交后此处显示结果</div>
+
+        <!-- 进度条 -->
+        <div id="progress-shell" class="progress-shell" hidden>
+          <div class="progress-track">
+            <div class="progress-indeterminate"></div>
+          </div>
+          <div id="progress-meta" class="progress-meta"></div>
+        </div>
+
+        <!-- 结果图片画廊 -->
+        <div id="result-gallery" class="result-gallery" hidden></div>
+
+        <!-- 自动保存结果 -->
+        <section id="saved-panel" class="saved-panel" hidden>
+          <div class="saved-header">
+            <div>
+              <span class="saved-title-text">已保存</span>
+              <p class="saved-copy">成功落盘的文件会展示在这里。</p>
+            </div>
+            <p class="meta-text" id="saved-summary"></p>
+          </div>
+          <div id="saved-list" class="saved-list"></div>
+          <div id="saved-errors" class="notice notice-warning" hidden></div>
+        </section>
+
+        <!-- 历史记录 -->
+        <section id="history-panel" class="history-panel">
+          <div class="history-header">
+            <div>
+              <span class="history-title">历史记录</span>
+              <p class="history-copy">图片可点击回填，也可拖到首帧或尾帧卡片；视频只展示，不参与回填。</p>
+            </div>
+            <button type="button" class="ghost-mini" id="refresh-history">⟳ 刷新</button>
+          </div>
+          <p id="history-summary" class="meta-text history-summary-text"></p>
+          <div id="history-list" class="history-grid"></div>
+          <p id="history-empty" class="empty-hint">暂无历史媒体</p>
+        </section>
+
+        <!-- 原始 JSON -->
+        <details id="raw-panel" class="raw-panel" hidden>
+          <summary class="raw-summary">原始 JSON 响应</summary>
+          <pre id="raw-output"></pre>
+        </details>
+      </aside>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google FX Studio - AI 视频与图片批量生成控制台</title>
+    <meta name="description" content="AdsPower Google FX 自动化生成仪表盘 - 支持 Veo 3.1 视频生成与 Nano Banana/Imagen 图片批量生成">
+    <!-- 引入高品质现代字体与图标 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 1. 侧边栏 Sidebar -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header">
+                <span class="material-symbols-outlined logo-icon">auto_awesome</span>
+                <div class="logo-text">
+                    <h1>Google FX Studio</h1>
+                    <span class="sub-logo">AdsPower Automation</span>
+                </div>
+            </div>
+
+            <!-- AdsPower 状态与环境配置 -->
+            <div class="env-status-card">
+                <div class="status-indicator">
+                    <span class="status-dot" id="adspower-status-dot"></span>
+                    <span class="status-text" id="adspower-status-text">正在检测 AdsPower...</span>
+                </div>
+                <div class="form-group env-select-group">
+                    <label for="env-profile-select">AdsPower 浏览器环境</label>
+                    <select id="env-profile-select" class="form-select">
+                        <option value="">-- 请选择浏览器环境 --</option>
+                    </select>
+                </div>
+                <button type="button" id="btn-force-rotate-proxy" class="btn btn-secondary btn-sm">
+                    <span class="material-symbols-outlined">restart_alt</span> 强制轮换代理 IP
+                </button>
+            </div>
+
+            <!-- 导航菜单 -->
+            <nav class="sidebar-nav">
+                <button class="nav-item active" id="nav-tab-video" data-target="tab-pane-video">
+                    <span class="material-symbols-outlined">movie</span>
+                    <span>Veo 视频生成</span>
+                </button>
+                <button class="nav-item" id="nav-tab-image" data-target="tab-pane-image">
+                    <span class="material-symbols-outlined">image</span>
+                    <span>图片批量生成</span>
+                </button>
+                <button class="nav-item" id="nav-tab-script-flow" data-target="tab-pane-script-flow">
+                    <span class="material-symbols-outlined">auto_stories</span>
+                    <span>故事脚本流</span>
+                </button>
+                <button class="nav-item" id="nav-tab-gallery" data-target="tab-pane-gallery">
+                    <span class="material-symbols-outlined">video_library</span>
+                    <span>灵感媒体库</span>
+                </button>
+                <button class="nav-item" id="nav-tab-logs" data-target="tab-pane-logs">
+                    <span class="material-symbols-outlined">terminal</span>
+                    <span>系统监控日志</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>System Version: 2026.06</p>
+                <p>Powered by Google Veo & Imagen</p>
+            </div>
+        </aside>
+
+        <!-- 2. 主内容区 Main Content -->
+        <main class="app-main">
+            <!-- 头部控制栏 -->
+            <header class="main-header">
+                <div class="header-title">
+                    <h2 id="current-pane-title">Veo 视频生成控制台</h2>
+                </div>
+                <div class="header-actions">
+                    <div class="active-task-badge" id="active-task-badge" style="display: none;">
+                        <span class="spinner"></span>
+                        <span id="active-task-text">正在运行生成任务...</span>
+                        <button id="btn-cancel-task" title="终止并关闭浏览器">
+                            <span class="material-symbols-outlined">cancel</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 标签页容器 -->
+            <div class="tab-content">
+                <!-- 🎬 视频生成标签页 -->
+                <section class="tab-pane active" id="tab-pane-video">
+                    <form id="video-generator-form" class="generator-form">
+                        <div class="form-row">
+                            <div class="form-col col-8">
+                                <div class="form-group">
+                                    <label for="video-prompt-input">提示词 (Prompt)</label>
+                                    <textarea id="video-prompt-input" class="form-input text-area" placeholder="在此输入画面提示词，描述您想要的动态场景细节..." required></textarea>
+                                </div>
+                            </div>
+                            <div class="form-col col-4">
+                                <div class="form-group">
+                                    <label for="video-output-path">输出目录</label>
+                                    <input type="text" id="video-output-path" class="form-input" placeholder="留空则使用默认输出目录 (AI_video)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 参考图槽位 (首尾帧) -->
+                        <div class="references-section">
+                            <h3 class="section-title">参考图像配置 (Image-to-Video)</h3>
+                            <div class="slots-container">
+                                <!-- 首帧槽位 -->
+                                <div class="image-slot" id="slot-start-frame" data-label="start">
+                                    <input type="file" id="input-start-frame" accept="image/*" style="display: none;">
+                                    <div class="slot-placeholder">
+                                        <span class="material-symbols-outlined slot-icon">image_play</span>
+                                        <h4>首帧 (Start Frame)</h4>
+                                        <p>点击或拖拽图片到此处</p>
+                                    </div>
+                                    <div class="slot-preview" style="display: none;">
+                                        <img src="" alt="Start Frame Preview" id="preview-start-frame">
+                                        <div class="slot-overlay">
+                                            <span class="preview-filename" id="filename-start-frame"></span>
+                                            <button type="button" class="btn-remove-slot" id="btn-remove-start-frame">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 尾帧槽位 -->
+                                <div class="image-slot" id="slot-end-frame" data-label="end">
+                                    <input type="file" id="input-end-frame" accept="image/*" style="display: none;">
+                                    <div class="slot-placeholder">
+                                        <span class="material-symbols-outlined slot-icon">image_roll</span>
+                                        <h4>尾帧 (End Frame)</h4>
+                                        <p>点击或拖拽图片到此处（可选）</p>
+                                    </div>
+                                    <div class="slot-preview" style="display: none;">
+                                        <img src="" alt="End Frame Preview" id="preview-end-frame">
+                                        <div class="slot-overlay">
+                                            <span class="preview-filename" id="filename-end-frame"></span>
+                                            <button type="button" class="btn-remove-slot" id="btn-remove-end-frame">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 参数控制面板 -->
+                        <div class="control-panel">
+                            <h3 class="section-title">高级生成参数</h3>
+                            <div class="params-grid">
+                                <div class="param-card">
+                                    <label>视频生成模型</label>
+                                    <div class="radio-card-group" id="video-model-group">
+                                        <div class="radio-card active" data-value="Veo 3.1 - Fast">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">bolt</span>
+                                                <h5>Veo 3.1 - Fast</h5>
+                                            </div>
+                                            <p>平衡生成速度与清晰度，适合绝大多数动态渲染场景</p>
+                                        </div>
+                                        <div class="radio-card" data-value="Veo 3.1 - Quality">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">hd</span>
+                                                <h5>Veo 3.1 - Quality</h5>
+                                            </div>
+                                            <p>超高细节展现与保真度，渲染速度稍慢</p>
+                                        </div>
+                                        <div class="radio-card" data-value="Veo 3.1 - Lite">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">speed</span>
+                                                <h5>Veo 3.1 - Lite</h5>
+                                            </div>
+                                            <p>极速预览，画质略低于 Fast 模型</p>
+                                        </div>
+                                        <div class="radio-card" data-value="Veo 3.1 - Lite [Lower Priority]">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">favorite_border</span>
+                                                <h5>Veo 3.1 - Lite [免积分]</h5>
+                                            </div>
+                                            <p>低优先级轻量预览模式，无需积分，适合高频测试</p>
+                                        </div>
+                                        <div class="radio-card" data-value="Omni Flash">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">flash_on</span>
+                                                <h5>Omni Flash</h5>
+                                            </div>
+                                            <p>使用素材模式快速渲染动态片段，不适用于首尾帧插值</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-card">
+                                    <label>画面宽高比 (Aspect Ratio)</label>
+                                    <div class="ratio-select-buttons" id="video-ratio-group">
+                                        <button type="button" class="btn-ratio active" data-value="9:16">
+                                            <span class="ratio-shape ratio-9-16"></span>
+                                            <span>9:16 (竖屏短视频)</span>
+                                        </button>
+                                        <button type="button" class="btn-ratio" data-value="16:9">
+                                            <span class="ratio-shape ratio-16-9"></span>
+                                            <span>16:9 (横屏宽银幕)</span>
+                                        </button>
+                                        <button type="button" class="btn-ratio" data-value="1:1">
+                                            <span class="ratio-shape ratio-1-1"></span>
+                                            <span>1:1 (方画幅)</span>
+                                        </button>
+                                        <button type="button" class="btn-ratio" data-value="3:4">
+                                            <span class="ratio-shape ratio-3-4"></span>
+                                            <span>3:4 (普通竖屏)</span>
+                                        </button>
+                                        <button type="button" class="btn-ratio" data-value="4:3">
+                                            <span class="ratio-shape ratio-4-3"></span>
+                                            <span>4:3 (普通横屏)</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="param-card">
+                                    <label>生成时长</label>
+                                    <div class="duration-select-buttons" id="video-duration-group">
+                                        <button type="button" class="btn-duration active" data-value="6s">6s</button>
+                                        <button type="button" class="btn-duration" data-value="4s">4s</button>
+                                        <button type="button" class="btn-duration" data-value="8s">8s</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="submit-section">
+                            <button type="submit" id="btn-submit-video" class="btn btn-primary btn-lg">
+                                <span class="material-symbols-outlined">rocket_launch</span> 开始渲染生成视频
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- 🖼️ 图片批量生成标签页 -->
+                <section class="tab-pane" id="tab-pane-image">
+                    <form id="image-generator-form" class="generator-form">
+                        <div class="form-row">
+                            <div class="form-col col-8">
+                                <div class="form-group">
+                                    <label for="image-prompts-input">提示词列表 (一行一个 Prompt，支持批量生成)</label>
+                                    <textarea id="image-prompts-input" class="form-input text-area" placeholder="A magical golden forest at sunset&#10;A cute neon cybernetic cat playing in water&#10;An astronaut drinking coffee on the moon..." required></textarea>
+                                </div>
+                            </div>
+                            <div class="form-col col-4">
+                                <div class="form-group">
+                                    <label for="image-output-path">输出目录</label>
+                                    <input type="text" id="image-output-path" class="form-input" placeholder="留空则使用默认输出目录">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 图像参考槽位 -->
+                        <div class="references-section">
+                            <h3 class="section-title">图生图参考配置 (多图参考，可选)</h3>
+                            <div class="slots-container">
+                                <div class="image-slot slot-multi" id="slot-ref-images">
+                                    <input type="file" id="input-ref-images" accept="image/*" multiple style="display: none;">
+                                    <div class="slot-placeholder">
+                                        <span class="material-symbols-outlined slot-icon">photo_library</span>
+                                        <h4>参考图库 (Reference Images)</h4>
+                                        <p>点击或拖拽上传一张或多张参考图片</p>
+                                    </div>
+                                    <div class="multi-previews-grid" id="image-multi-previews" style="display: none;">
+                                        <!-- 动态渲染的缩略图 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 参数设置 -->
+                        <div class="control-panel">
+                            <h3 class="section-title">高级生成参数</h3>
+                            <div class="params-grid">
+                                <div class="param-card">
+                                    <label>图片生成模型</label>
+                                    <div class="radio-card-group" id="image-model-group">
+                                        <div class="radio-card active" data-value="Nano Banana 2">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">eco</span>
+                                                <h5>Nano Banana 2</h5>
+                                            </div>
+                                            <p>推荐首选。新一代极速渲染算法，适合多风格探索</p>
+                                        </div>
+                                        <div class="radio-card" data-value="Nano Banana Pro">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">workspace_premium</span>
+                                                <h5>Nano Banana Pro</h5>
+                                            </div>
+                                            <p>生成质量升级，细节饱满，适合精细材质表现</p>
+                                        </div>
+                                        <div class="radio-card" data-value="Imagen 4">
+                                            <div class="radio-card-header">
+                                                <span class="material-symbols-outlined">filter_drama</span>
+                                                <h5>Imagen 4</h5>
+                                            </div>
+                                            <p>Imagen 旗舰模型。艺术感强、语义理解深刻</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="param-card">
+                                    <label>画面宽高比 (Aspect Ratio)</label>
+                                    <div class="ratio-select-buttons" id="image-ratio-group">
+                                        <button type="button" class="btn-ratio active" data-value="1:1">
+                                            <span class="ratio-shape ratio-1-1"></span>
+                                            <span>1:1 (方画幅)</span>
+                                        </button>
+                                        <button type="button" class="btn-ratio" data-value="9:16">
+                                            <span class="ratio-shape ratio-9-16"></span>
+                                            <span>9:16 (手机屏)</span>
+                                        </button>
+                                        <button type="button" class="btn-ratio" data-value="16:9">
+                                            <span class="ratio-shape ratio-16-9"></span>
+                                            <span>16:9 (宽荧幕)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="submit-section">
+                            <button type="submit" id="btn-submit-image" class="btn btn-primary btn-lg">
+                                <span class="material-symbols-outlined">style</span> 开始批量绘制图片
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- 📖 故事脚本流标签页 -->
+                <section class="tab-pane" id="tab-pane-script-flow">
+                    <form id="script-flow-form" class="generator-form">
+                        <div class="form-row">
+                            <div class="form-col col-8">
+                                <div class="form-group">
+                                    <label for="script-flow-input">故事脚本内容 (Script Content)</label>
+                                    <textarea id="script-flow-input" class="form-input text-area" style="min-height: 250px;" placeholder="在此粘贴您的故事脚本，需遵循以下标准格式：
+
+图片提示词
+图片 1
+一只可爱的猫咪在草地上玩耍
+图片 2
+猫咪在追逐一个红色的皮球
+
+视频提示词
+视频 1
+猫咪抬头看并扑向前
+视频 2
+猫咪在草地上快速跑过" required></textarea>
+                                </div>
+                            </div>
+                            <div class="form-col col-4" style="display:flex; flex-direction:column; gap: 16px;">
+                                <div class="form-group">
+                                    <label for="script-project-name">项目/文件夹名称</label>
+                                    <input type="text" id="script-project-name" class="form-input" placeholder="留空则自动生成随机项目名">
+                                </div>
+                                <div class="form-group">
+                                    <label for="script-output-path">输出根目录</label>
+                                    <input type="text" id="script-output-path" class="form-input" placeholder="留空则使用默认 AI_video 目录">
+                                </div>
+                                <div class="form-group">
+                                    <label for="script-merge-speed">播放速度乘数 (Speed)</label>
+                                    <input type="number" id="script-merge-speed" class="form-input" value="2.0" step="0.1" min="0.5" max="3.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 高级配置 -->
+                        <div class="control-panel">
+                            <h3 class="section-title">生成模型与比例配置</h3>
+                            <div class="params-grid">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 12px;">
+                                    <div class="form-group">
+                                        <label for="script-image-model">图片生成模型</label>
+                                        <select id="script-image-model" class="form-select">
+                                            <option value="Nano Banana 2">Nano Banana 2 (推荐)</option>
+                                            <option value="Nano Banana Pro">Nano Banana Pro</option>
+                                            <option value="Imagen 4">Imagen 4</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="script-video-model">视频生成模型</label>
+                                        <select id="script-video-model" class="form-select">
+                                            <option value="Omni Flash">Omni Flash (推荐 / 适配素材模式)</option>
+                                            <option value="Veo 3.1 - Fast">Veo 3.1 - Fast</option>
+                                            <option value="Veo 3.1 - Quality">Veo 3.1 - Quality</option>
+                                            <option value="Veo 3.1 - Lite">Veo 3.1 - Lite</option>
+                                            <option value="Veo 3.1 - Lite [Lower Priority]">Veo 3.1 - Lite [免积分]</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                                    <div class="form-group">
+                                        <label for="script-video-ratio">画面比例 (Aspect Ratio)</label>
+                                        <select id="script-video-ratio" class="form-select">
+                                            <option value="9:16">9:16 (竖屏短视频)</option>
+                                            <option value="16:9">16:9 (横屏宽银幕)</option>
+                                            <option value="1:1">1:1 (方画幅)</option>
+                                            <option value="3:4">3:4 (普通竖屏)</option>
+                                            <option value="4:3">4:3 (普通横屏)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="script-video-duration">单片段时长</label>
+                                        <select id="script-video-duration" class="form-select">
+                                            <option value="8s">8s (推荐)</option>
+                                            <option value="6s">6s</option>
+                                            <option value="4s">4s</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="submit-section" style="display:flex; justify-content:space-between; align-items:center;">
+                            <button type="button" class="btn btn-secondary" id="btn-load-script-demo">
+                                <span class="material-symbols-outlined">description</span> 载入测试范例
+                            </button>
+                            <button type="submit" id="btn-submit-script-flow" class="btn btn-primary btn-lg">
+                                <span class="material-symbols-outlined">auto_stories</span> 一键自动生成并合成故事
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- 管线状态看板 -->
+                    <div class="pipeline-status-container" id="pipeline-status-panel" style="display: none; margin-top: 32px;">
+                        <h3 class="section-title">管线执行进度看板</h3>
+                        <div class="pipeline-progress-summary" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom: 24px;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <span id="pipeline-step-text" style="font-weight:600;">正在解析脚本...</span>
+                                <span id="pipeline-percent-text" style="font-weight:700; color:var(--color-primary);">0%</span>
+                            </div>
+                            <div class="progress-bar-track" style="margin-top: 8px;">
+                                <div class="progress-bar-fill" id="pipeline-progress-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="pipeline-steps-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <div class="pipeline-column" style="background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); border-radius:12px; padding:16px;">
+                                <h4 style="font-size:0.95rem; font-weight:600; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">🖼️ 图片生成步骤 (链式连贯)</h4>
+                                <div class="pipeline-steps-list" id="pipeline-images-list" style="display:flex; flex-direction:column; gap:8px;">
+                                    <!-- 动态渲染图片生成状态 -->
+                                </div>
+                            </div>
+                            <div class="pipeline-column" style="background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); border-radius:12px; padding:16px;">
+                                <h4 style="font-size:0.95rem; font-weight:600; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">🎬 视频生成步骤 (首尾双帧)</h4>
+                                <div class="pipeline-steps-list" id="pipeline-videos-list" style="display:flex; flex-direction:column; gap:8px;">
+                                    <!-- 动态渲染视频生成状态 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 最终产出区域 -->
+                        <div class="pipeline-result-area" id="pipeline-result-box" style="display: none; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.3); border-radius:12px; padding:20px; align-items:center; gap:16px; margin-top:24px; animation: fadeIn 0.3s ease;">
+                            <span class="material-symbols-outlined check-icon" style="font-size:48px; color:var(--color-success);">check_circle</span>
+                            <div class="result-details" style="flex-grow:1;">
+                                <h4 style="font-size:1.05rem; font-weight:600; color:#ffffff; margin-bottom:4px;">🎉 故事生成全部完成！</h4>
+                                <p id="pipeline-result-filename" style="font-size:0.85rem; color:var(--text-secondary);">输出视频：merged_story.mp4</p>
+                            </div>
+                            <div class="result-actions" style="display:flex; gap:12px;">
+                                <button type="button" class="btn btn-primary btn-sm" id="btn-play-pipeline-result">
+                                    <span class="material-symbols-outlined">play_arrow</span> 立即播放
+                                </button>
+                                <a href="" id="btn-download-pipeline-result" class="btn btn-secondary btn-sm" download>
+                                    <span class="material-symbols-outlined">download</span> 离线下载
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 📁 媒体库标签页 -->
+                <section class="tab-pane" id="tab-pane-gallery">
+                    <!-- FFmpeg 视频合并托盘 -->
+                    <div class="ffmpeg-merge-workspace" id="ffmpeg-merge-workspace">
+                        <div class="merge-header">
+                            <div class="merge-title">
+                                <span class="material-symbols-outlined">merge_type</span>
+                                <h4>FFmpeg 视频片段合并工作台</h4>
+                            </div>
+                            <span class="badge" id="merge-count-badge">已选择 0 个片段</span>
+                        </div>
+                        
+                        <div class="merge-slots-wrapper">
+                            <div class="merge-empty-tip" id="merge-empty-tip">
+                                <p>点击媒体库下方视频卡片上的 “<span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">add</span> 合并” 按钮，加入工作台进行拖拽排序与调速合并</p>
+                            </div>
+                            <div class="merge-slots-list" id="merge-slots-list" style="display: none;">
+                                <!-- 动态插入的待合并片段卡片 -->
+                            </div>
+                        </div>
+
+                        <div class="merge-controls" id="merge-controls-panel" style="display: none;">
+                            <div class="form-group">
+                                <label for="merge-speed-slider">播放速度乘数: <span id="label-speed-val">1.0x</span></label>
+                                <input type="range" id="merge-speed-slider" min="0.5" max="3.0" step="0.1" value="1.0" class="speed-range-slider">
+                            </div>
+                            <div class="form-group">
+                                <label for="merge-output-name">合并文件名</label>
+                                <input type="text" id="merge-output-name" class="form-input" value="merged_video.mp4">
+                            </div>
+                            <button type="button" class="btn btn-gradient" id="btn-execute-merge">
+                                <span class="material-symbols-outlined">call_merge</span> 执行合并并重新编码
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 媒体网格 -->
+                    <div class="gallery-wrapper">
+                        <div class="gallery-filter-bar">
+                            <span class="filter-label">过滤目录：</span>
+                            <input type="text" id="gallery-dir-input" class="form-input text-sm" placeholder="AI_video 的绝对路径...">
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-gallery">
+                                <span class="material-symbols-outlined">refresh</span> 刷新文件库
+                            </button>
+                        </div>
+
+                        <div class="gallery-grid" id="gallery-grid">
+                            <!-- 由 JS 动态读 manifest 与 /media 渲染 -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 🖥️ 系统监控日志标签页 -->
+                <section class="tab-pane" id="tab-pane-logs">
+                    <div class="monitor-container">
+                        <!-- 当前执行进度卡片 -->
+                        <div class="active-progress-card">
+                            <div class="progress-details">
+                                <span class="progress-task-name" id="progress-task-name">无处于活动状态的任务</span>
+                                <span class="progress-task-percent" id="progress-task-percent">0%</span>
+                            </div>
+                            <div class="progress-bar-track">
+                                <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- 复古开发终端 -->
+                        <div class="terminal-card">
+                            <div class="terminal-header">
+                                <div class="terminal-dots">
+                                    <span class="dot red"></span>
+                                    <span class="dot yellow"></span>
+                                    <span class="dot green"></span>
+                                </div>
+                                <span class="terminal-title">AdsPower Python Backend Output Log</span>
+                                <button type="button" id="btn-clear-terminal" class="btn-clear" title="清空视窗">
+                                    <span class="material-symbols-outlined">delete_sweep</span>
+                                </button>
+                            </div>
+                            <div class="terminal-body" id="terminal-log-output">
+                                <div class="log-line system">[SYSTEM] Terminal initialized. Waiting for task start...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- 视频播放模态框 (Lightbox Modal) -->
+    <div class="lightbox-modal" id="video-lightbox" style="display: none;">
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="btn-close-lightbox">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <video id="lightbox-video-player" controls autoplay loop class="lightbox-video"></video>
+            <div class="lightbox-footer">
+                <h4 id="lightbox-video-title">Video Name</h4>
+                <p id="lightbox-video-path">Path</p>
+                <a href="" id="btn-lightbox-download" class="btn btn-secondary btn-sm" download>
+                    <span class="material-symbols-outlined">download</span> 离线下载
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交互脚本 -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

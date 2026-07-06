@@ -1,0 +1,32 @@
+{
+  "name": "adspower-browser",
+  "version": "1.0.6",
+  "private": true,
+  "description": "AdsPower Local API — monorepo: core, MCP server, and adspower-browser CLI/skill",
+  "scripts": {
+    "build": "pnpm --filter adspower-browser --filter local-api-mcp-typescript run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "adspower",
+    "local-api",
+    "mcp",
+    "typescript"
+  ],
+  "author": "AdsPower",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AdsPower/adspower-browser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AdsPower/adspower-browser/issues"
+  },
+  "homepage": "https://github.com/AdsPower/adspower-browser#readme",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

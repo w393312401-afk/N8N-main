@@ -1,0 +1,72 @@
+# ============================================================
+# N8N-main .gitignore
+# ============================================================
+
+# ─── macOS 系统垃圾 ──────────────────────────────────────────
+**/.DS_Store
+**/._.DS_Store
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/.AppleDouble
+
+# ─── Windows 系统垃圾 ────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── Python 缓存 ────────────────────────────────────────────
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/.Python
+**/.pytest_cache/
+**/*.egg-info/
+**/dist/
+**/build/
+
+# ─── Node.js ─────────────────────────────────────────────────
+**/node_modules/
+**/.npm/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# ─── 日志与运行时文件 ─────────────────────────────────────────
+n8n_background.log
+runtime/
+Adspower/AI/logs/
+Adspower/AI/runtime/
+**/*.log
+**/*.pid
+
+# ─── 媒体与本地运行生成 ──────────────────────────────────────
+AI_video/
+yunwu-image-edit-demo/merged/
+yunwu-image-edit-demo/backups/
+yunwu-image-edit-demo/*.html
+yunwu-image-edit-demo/*.txt
+yunwu-image-edit-demo/.history.json
+yunwu-image-edit-demo/.launcher_config.json
+
+# ─── 二进制大文件 ──────────────────────────────────────────
+tools/caddy/caddy.exe
+
+# ─── scratch 调试临时文件 ────────────────────────────────────
+scratch/
+
+# ─── 环境变量 / 密钥（不提交到版本控制）─────────────────────
+.env
+.env.local
+.env.*.local
+Adspower/AI/.env
+
+# ─── 编辑器配置 ─────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+
+# ─── n8n 数据库与本地文件（本地数据，不提交）───────────────
+**/*.sqlite
+**/*.db
+.n8n-files/

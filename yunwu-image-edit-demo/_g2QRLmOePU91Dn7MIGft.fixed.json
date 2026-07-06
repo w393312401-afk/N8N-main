@@ -1,0 +1,1129 @@
+{
+  "updatedAt": "2026-04-25T12:46:23.262Z",
+  "createdAt": "2026-04-24T11:02:38.428Z",
+  "id": "_g2QRLmOePU91Dn7MIGft",
+  "name": "云雾 视频测试流程 - 从当前任务图片开始",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "视频测试入口\n\n从当前 Notion 进行中任务读取 Prompt 和配置。\n\n直接匹配本地已生成图片结果进入视频制作，不执行图片生成节点。",
+        "height": 220,
+        "width": 420,
+        "color": 5
+      },
+      "id": "ab5831c5-787e-406d-94df-ec8eead8d696",
+      "name": "视频测试说明",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        32
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "aa6035c1-f603-4218-af46-dae61f7711cc",
+      "name": "手动测试触发",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        456
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "3054062a-50ec-80c0-b2e7-d476f34e4cf9",
+          "mode": "list",
+          "cachedResultName": "任务数据库(Task Database)",
+          "cachedResultUrl": "https://www.notion.so/3054062a50ec80c0b2e7d476f34e4cf9"
+        },
+        "limit": 1,
+        "simple": false,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "状态|status",
+              "condition": "equals",
+              "statusValue": "进行中"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -992,
+        456
+      ],
+      "id": "64c6c38f-cc4a-4127-82da-389e05a08318",
+      "name": "读取 Notion 任务",
+      "credentials": {
+        "notionApi": {
+          "id": "Ppuuvmc1od16fdoV",
+          "name": "AI起号"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "config.apiKey（云雾 API Key）",
+              "value": "sk-nbCUZRwvnPhncU910TD5DY7NunbsEnsngaFI1l6uIvnPvkUl"
+            },
+            {
+              "name": "config.imageApiKey（云雾图片令牌）",
+              "value": "sk-fqFiyu73q0txUSPtlLQ0n9aTkRZepHA8ucOIrzwkBMG2WN8I"
+            },
+            {
+              "name": "config.videoApiKey（云雾视频令牌）",
+              "value": "sk-nbCUZRwvnPhncU910TD5DY7NunbsEnsngaFI1l6uIvnPvkUl"
+            },
+            {
+              "name": "config.imageApiUrl（云雾官方图片端点）",
+              "value": "https://yunwu.ai/v1/images/generations"
+            },
+            {
+              "name": "config.geminiApiUrl（云雾 Gemini 图片端点）",
+              "value": "https://yunwu.ai/v1beta/models/{model}:generateContent"
+            },
+            {
+              "name": "config.videoApiUrl（云雾官方视频端点）",
+              "value": "https://yunwu.ai/v1/videos"
+            },
+            {
+              "name": "config.videoStatusUrl（云雾视频状态端点）",
+              "value": "https://yunwu.ai/v1/videos/{id}"
+            },
+            {
+              "name": "config.videoContentUrl（云雾视频下载端点）",
+              "value": "https://yunwu.ai/v1/videos/{id}/content"
+            },
+            {
+              "name": "config.imageSaveRoot（图片保存目录）",
+              "value": "/Users/fly/.n8n-files/image-output"
+            },
+            {
+              "name": "config.imageModel（图片模型）",
+              "value": "gemini-3.1-flash-image-preview"
+            },
+            {
+              "name": "config.imageAspectRatio（图片比例）",
+              "value": "9:16"
+            },
+            {
+              "name": "config.imageSize（GPT 图片尺寸）",
+              "value": "auto"
+            },
+            {
+              "name": "config.geminiImageSize（Gemini 图片清晰度）",
+              "value": "512"
+            },
+            {
+              "name": "config.videoModel（视频模型）",
+              "value": "veo_3_1-fast"
+            },
+            {
+              "name": "config.videoSeconds（视频时长）",
+              "value": "8"
+            },
+            {
+              "name": "config.videoSize（视频比例）",
+              "value": "9x16"
+            },
+            {
+              "name": "config.videoWatermark（水印开关）",
+              "value": "false"
+            }
+          ],
+          "number": [
+            {
+              "name": "config.imageN（图片张数）",
+              "value": 1
+            },
+            {
+              "name": "config.pollIntervalMs（轮询间隔毫秒）",
+              "value": 10000
+            },
+            {
+              "name": "config.imageTimeoutMs（图片超时毫秒）",
+              "value": 1200000
+            },
+            {
+              "name": "config.videoTimeoutMs（视频超时毫秒）",
+              "value": 2400000
+            },
+            {
+              "name": "config.videoMaxAttempts（视频最大尝试次数）",
+              "value": 2
+            },
+            {
+              "name": "config.videoRetryDelayMs（视频失败重试等待毫秒）",
+              "value": 30000
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "id": "4763aaaf-ad23-46c1-8be4-8c74421c0c9e",
+      "name": "统一配置",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        456
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst row = $input.first().json;\nfunction text(value) {\n  if (value === null || value === undefined) return '';\n  if (typeof value === 'string') return value.trim();\n  if (Array.isArray(value)) return value.map(text).filter(Boolean).join('\\n').trim();\n  if (typeof value === 'object') {\n    if (typeof value.plain_text === 'string') return value.plain_text.trim();\n    if (typeof value.content === 'string') return value.content.trim();\n    if (typeof value.name === 'string') return value.name.trim();\n    if (Array.isArray(value.rich_text)) return value.rich_text.map(text).filter(Boolean).join('\\n').trim();\n    if (Array.isArray(value.title)) return value.title.map(text).filter(Boolean).join(' ').trim();\n    if (value.status) return text(value.status);\n    if (value.text) return text(value.text);\n  }\n  return '';\n}\nfunction sectionsFromText(sourceText, kind) {\n  const lines = String(sourceText || '').split(/\\r?\\n/);\n  const out = [];\n  let current = null;\n  const flush = () => {\n    if (current && current.body.length) out.push({ ...current, prompt: current.body.join('\\n').trim() });\n  };\n  for (const raw of lines) {\n    const t = raw.trim().replace(/^[^A-Za-z0-9]+/, '');\n    const m = t.match(/^(IMAGE|VIDEO)\\s+(\\d+)/i);\n    if (m) {\n      flush();\n      current = null;\n      if (m[1].toUpperCase() === kind) current = { slot: kind + ' ' + Number(m[2]), index: Number(m[2]), body: [] };\n      continue;\n    }\n    if (current) current.body.push(raw);\n  }\n  flush();\n  return out.filter((x) => x.prompt);\n}\nfunction safePart(value) {\n  return String(value || 'yunwu').replace(/[^\\p{L}\\p{N}_-]+/gu, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'yunwu';\n}\nfunction mimeFromBytes(buffer, filePath) {\n  if (buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';\n  if (buffer.length > 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';\n  if (buffer.length > 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'image/webp';\n  if (buffer.length > 6 && ['GIF87a', 'GIF89a'].includes(buffer.subarray(0, 6).toString('ascii'))) return 'image/gif';\n  throw new Error(`Saved image file is not a valid image: ${filePath}`);\n}\nfunction defaultConfigValue(defaults, key) {\n  if (defaults[key] !== undefined) return defaults[key];\n  const found = Object.entries(defaults).find(([name]) => name === key || name.startsWith(key));\n  return found ? found[1] : undefined;\n}\nfunction defaultImageSaveRoot() {\n  return \"/Users/fly/.n8n-files/image-output\";\n}\nfunction resolveLocalPath(value) {\n  const raw = text(value);\n  if (!raw || /^[A-Za-z]:[\\\\/]/.test(raw)) return defaultImageSaveRoot();\n  const expanded = raw\n    .replace(/^~(?=$|[\\\\/])/, '/Users/fly')\n    .replace(/\\$\\{HOME\\}|\\$HOME|%USERPROFILE%|%HOME%/gi, '/Users/fly');\n  return path.resolve(expanded);\n}\nfunction filesForStem(saveRoot, stem) {\n  if (!fs.existsSync(saveRoot)) return [];\n  return fs.readdirSync(saveRoot)\n    .map((name) => {\n      const m = name.match(/^(.*)_image(\\d+)_\\d+\\.(png|jpe?g|webp|gif)$/i);\n      if (!m) return null;\n      const fullPath = path.join(saveRoot, name);\n      const stat = fs.statSync(fullPath);\n      return { stem: m[1], index: Number(m[2]), fullPath, fileName: name, mtimeMs: stat.mtimeMs };\n    })\n    .filter(Boolean)\n    .filter((file) => !stem || file.stem === stem)\n    .sort((a, b) => b.mtimeMs - a.mtimeMs);\n}\nfunction latestGroupStem(saveRoot) {\n  const all = filesForStem(saveRoot, '');\n  const groups = new Map();\n  for (const file of all) {\n    const group = groups.get(file.stem) || { stem: file.stem, count: 0, latest: 0 };\n    group.count += 1;\n    group.latest = Math.max(group.latest, file.mtimeMs);\n    groups.set(file.stem, group);\n  }\n  return [...groups.values()].sort((a, b) => b.latest - a.latest || b.count - a.count)[0]?.stem || '';\n}\nconst props = row.properties || {};\nconst defaults = row.config || {};\nconst name = text(row.Name) || text(row.name) || text(props.Name) || 'Notion prompt task';\nconst status = text(row.status) || text(props.status);\nconst prompt = text(row.Prompt) || text(row.prompt) || text(props.Prompt);\nconst creative = text(row.creative) || text(props.creative);\nconst rawPrompt = prompt || creative;\nif (!rawPrompt) throw new Error('Notion task is missing Prompt content.');\nconst trimmed = rawPrompt.trim();\nconst sourcePack = (trimmed.startsWith('{') || trimmed.startsWith('[')) ? JSON.parse(trimmed) : { promptPack: trimmed };\nconst pack = {\n  ...sourcePack,\n  title: sourcePack.title || name,\n  taskKey: row.id || row.pageId || row.url || sourcePack.taskKey || name,\n  notionTask: { id: row.id || row.pageId || '', url: row.url || '', name, status, creative },\n};\nconst legacyApiKey = pack.apiKey || pack.yunwuApiKey || defaultConfigValue(defaults, 'apiKey') || '';\nconst videoApiKey = pack.video?.apiKey || pack.videoApiKey || pack.yunwuVideoApiKey || defaultConfigValue(defaults, 'videoApiKey') || legacyApiKey;\nconst config = {\n  apiKey: legacyApiKey,\n  videoApiKey,\n  videoApiUrl: pack.video?.apiUrl || pack.videoApiUrl || defaultConfigValue(defaults, 'videoApiUrl') || 'https://yunwu.ai/v1/videos',\n  videoStatusUrl: pack.video?.statusUrl || pack.videoStatusUrl || defaultConfigValue(defaults, 'videoStatusUrl') || 'https://yunwu.ai/v1/videos/{id}',\n  videoContentUrl: pack.video?.contentUrl || pack.videoContentUrl || defaultConfigValue(defaults, 'videoContentUrl') || 'https://yunwu.ai/v1/videos/{id}/content',\n  imageSaveRoot: resolveLocalPath(pack.image?.saveRoot || pack.imageSaveRoot || defaultConfigValue(defaults, 'imageSaveRoot')),\n  videoModel: pack.video?.model || pack.videoModel || defaultConfigValue(defaults, 'videoModel') || 'veo_3_1-fast',\n  videoSeconds: String(pack.video?.seconds || pack.videoSeconds || defaultConfigValue(defaults, 'videoSeconds') || '8'),\n  videoSize: pack.video?.size || pack.videoSize || defaultConfigValue(defaults, 'videoSize') || '9x16',\n  videoWatermark: String(pack.video?.watermark ?? pack.videoWatermark ?? defaultConfigValue(defaults, 'videoWatermark') ?? 'false'),\n  pollIntervalMs: Number(pack.poll?.intervalMs || pack.pollIntervalMs || defaultConfigValue(defaults, 'pollIntervalMs') || 10000),\n  videoTimeoutMs: Number(pack.video?.timeoutMs || pack.videoTimeoutMs || pack.poll?.videoTimeoutMs || defaultConfigValue(defaults, 'videoTimeoutMs') || 40 * 60 * 1000),\n};\nconst images = Array.isArray(pack.images) ? pack.images : sectionsFromText(pack.promptPack || pack.promptPacked || pack.prompts || '', 'IMAGE');\nconst videos = Array.isArray(pack.videos) ? pack.videos : sectionsFromText(pack.promptPack || pack.promptPacked || pack.prompts || '', 'VIDEO').map((v) => ({ ...v, firstImage: v.index }));\nconst normalizedImages = images.map((item, i) => ({\n  slot: item.slot || item.label || 'IMAGE ' + (i + 1),\n  index: Number(item.index || String(item.slot || '').match(/\\d+/)?.[0] || i + 1),\n  prompt: String(item.prompt || item.text || '').trim(),\n})).filter((item) => item.prompt);\nif (!normalizedImages.length) throw new Error('Prompt Pack must include images[] or IMAGE sections.');\nconst maxImageIndex = normalizedImages.reduce((max, item) => Math.max(max, item.index), 0);\nfunction normalizeLastImage(item, i) {\n  const raw = item.lastImage === undefined ? (i + 2 <= maxImageIndex ? i + 2 : null) : item.lastImage;\n  if (raw === null || raw === undefined || raw === '') return null;\n  const index = Number(raw);\n  return Number.isFinite(index) && index <= maxImageIndex ? index : null;\n}\nconst normalizedVideos = videos.map((item, i) => ({\n  slot: item.slot || item.label || 'VIDEO ' + (i + 1),\n  index: Number(item.index || String(item.slot || '').match(/\\d+/)?.[0] || i + 1),\n  prompt: String(item.prompt || item.text || '').trim(),\n  firstImage: item.firstImage === null ? null : Number(item.firstImage || item.firstImageIndex || i + 1),\n  lastImage: normalizeLastImage(item, i),\n})).filter((item) => item.prompt);\nconst expectedStem = safePart(pack.taskKey || pack.title);\nlet stem = expectedStem;\nlet savedFiles = filesForStem(config.imageSaveRoot, stem);\nif (!savedFiles.length) {\n  stem = latestGroupStem(config.imageSaveRoot);\n  savedFiles = filesForStem(config.imageSaveRoot, stem);\n}\nif (!savedFiles.length) throw new Error(`No saved image files found in ${config.imageSaveRoot}.`);\nconst filesByIndex = new Map();\nfor (const file of savedFiles) {\n  if (!filesByIndex.has(file.index)) filesByIndex.set(file.index, file);\n}\nconst imageResults = normalizedImages.map((image) => {\n  const file = filesByIndex.get(Number(image.index));\n  if (!file) throw new Error(`${image.slot} is missing saved image${image.index} in ${config.imageSaveRoot}.`);\n  const bytes = fs.readFileSync(file.fullPath);\n  const mimeType = mimeFromBytes(bytes, file.fullPath);\n  return { ...image, taskKey: pack.taskKey, fileUrl: '', localPath: file.fullPath, fileName: file.fileName, mimeType, imageSource: 'saved-image-output' };\n});\nconst byIndex = new Map(imageResults.map((img) => [Number(img.index), img]));\nconst tasks = normalizedVideos.map((video) => {\n  const first = video.firstImage ? byIndex.get(Number(video.firstImage)) : null;\n  const last = video.lastImage ? byIndex.get(Number(video.lastImage)) : null;\n  if (video.firstImage && !first) throw new Error(video.slot + ' references missing firstImage ' + video.firstImage + '.');\n  if (video.lastImage && !last) throw new Error(video.slot + ' references missing lastImage ' + video.lastImage + '.');\n  return { json: {\n    title: pack.title,\n    taskKey: pack.taskKey,\n    notionTask: pack.notionTask,\n    config,\n    imageResults,\n    imageResultStem: stem,\n    ...video,\n    firstFileUrl: first?.fileUrl || '',\n    lastFileUrl: last?.fileUrl || '',\n    firstLocalPath: first?.localPath || '',\n    lastLocalPath: last?.localPath || '',\n    firstFileName: first?.fileName || 'first.png',\n    lastFileName: last?.fileName || 'last.png',\n    noVideos: false,\n  } };\n});\nreturn tasks.length ? tasks : [{ json: { title: pack.title, taskKey: pack.taskKey, notionTask: pack.notionTask, config, imageResults, imageResultStem: stem, noVideos: true } }];"
+      },
+      "id": "5be3fbb1-996f-4366-b265-6270e36a0720",
+      "name": "加载图片结果并拆分视频任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        456
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "191620a2-edfc-4074-ab28-c07fd731de06",
+      "name": "视频循环",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -320,
+        456
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 4,
+        "output": "={{ [\"completed\", \"succeeded\", \"success\"].includes(String($json.status || \"\").toLowerCase()) ? 0 : (([\"failed\", \"error\", \"timeout\", \"cancelled\", \"canceled\", \"expired\"].includes(String($json.status || \"\").toLowerCase())) ? 1 : (String($json.status || \"\").toLowerCase() === \"retry\" ? 2 : 3)) }}"
+      },
+      "id": "1316176b-315b-410f-85e1-76eceeae2225",
+      "name": "视频创建与状态路由",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.firstVideoLocalPath || $json.firstLocalPath || $json.firstFileUrl }}",
+        "dataPropertyName": "firstFrame"
+      },
+      "id": "287cc3f1-d868-4aa0-bd36-4ee99597667b",
+      "name": "下载首帧",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        360
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "aa4a90a1-10d3-4005-a334-0013250a8829",
+      "name": "合并首帧上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1024,
+        216
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ ($json.lastLocalPath || $json.lastFileUrl) ? 0 : 1 }}"
+      },
+      "id": "a2b86221-97bf-46c0-8650-fe6cafad0ba5",
+      "name": "是否存在尾帧",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        216
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.lastVideoLocalPath || $json.lastLocalPath || $json.lastFileUrl }}",
+        "dataPropertyName": "lastFrame"
+      },
+      "id": "1179f936-84a9-4350-b146-61b64063f2a6",
+      "name": "下载尾帧",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        144
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "3db2b219-8f7f-40f3-822d-276387a3cc5c",
+      "name": "合并尾帧上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1696,
+        72
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.videoApiUrl || \"https://yunwu.ai/v1/videos\" }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ ($json.config.videoApiKey || $json.config.apiKey) ? \"Bearer \" + ($json.config.videoApiKey || $json.config.apiKey) : \"\" }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $json.config.videoModel || \"veo_3_1-fast\" }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "seconds",
+              "value": "={{ $json.config.videoSeconds }}"
+            },
+            {
+              "name": "size",
+              "value": "={{ $json.config.videoSize }}"
+            },
+            {
+              "name": "watermark",
+              "value": "={{ $json.config.videoWatermark }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "input_reference",
+              "inputDataFieldName": "firstFrame"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "40c896c0-f0c5-4476-94c5-8f1990fd9262",
+      "name": "创建视频任务：首帧",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        432
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.config.videoApiUrl || \"https://yunwu.ai/v1/videos\" }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ ($json.config.videoApiKey || $json.config.apiKey) ? \"Bearer \" + ($json.config.videoApiKey || $json.config.apiKey) : \"\" }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $json.config.videoStartEndModel || $json.config.videoModelStartEnd || $json.config.videoModel || \"veo_3_1-fast\" }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "seconds",
+              "value": "={{ $json.config.videoSeconds }}"
+            },
+            {
+              "name": "size",
+              "value": "={{ $json.config.videoSize }}"
+            },
+            {
+              "name": "watermark",
+              "value": "={{ $json.config.videoWatermark }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "input_reference[]",
+              "inputDataFieldName": "firstFrame"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "input_reference[]",
+              "inputDataFieldName": "lastFrame"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "886073cf-3a90-4b1e-8717-44ff50e6dec8",
+      "name": "创建视频任务：首尾帧",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1920,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput2",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "9f68d56e-191b-4098-b618-eee7619fdfcb",
+      "name": "合并视频创建上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2144,
+        216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (item.noVideos) return [{ json: item }];\n\nconst done = new Set(['completed', 'succeeded', 'success']);\nconst failed = new Set(['failed', 'error', 'timeout', 'cancelled', 'canceled', 'expired', 'generation_failed', 'generate_failed', 'failed_generation', '生成失败', '失败']);\n\nfunction pickFirstNonEmpty(...values) {\n  return values.find((value) => typeof value === 'string' && value.trim())?.trim() || '';\n}\n\nfunction normalizeId(value) {\n  return String(value ?? '').trim();\n}\n\nfunction jobIdOf(source) {\n  if (!source || typeof source !== 'object') return '';\n  const body = source.body && typeof source.body === 'object' ? source.body : {};\n  const data = source.data && typeof source.data === 'object' ? source.data : {};\n  const result = source.result && typeof source.result === 'object' ? source.result : {};\n  return pickFirstNonEmpty(\n    normalizeId(data.id),\n    normalizeId(data.task_id),\n    normalizeId(data.taskId),\n    normalizeId(source.task_id),\n    normalizeId(source.taskId),\n    normalizeId(source.id),\n    normalizeId(source.video_id),\n    normalizeId(source.videoId),\n    normalizeId(source.job_id),\n    normalizeId(source.jobId),\n    normalizeId(result.id),\n    normalizeId(result.task_id),\n    normalizeId(body.data?.id),\n    normalizeId(body.data?.task_id),\n    normalizeId(body.data?.taskId),\n    normalizeId(body.task_id),\n    normalizeId(body.id),\n    normalizeId(source.videoPollId),\n  );\n}\n\nfunction statusOf(source) {\n  if (!source || typeof source !== 'object') return '';\n  const body = source.body && typeof source.body === 'object' ? source.body : {};\n  const data = source.data && typeof source.data === 'object' ? source.data : {};\n  const result = source.result && typeof source.result === 'object' ? source.result : {};\n  return pickFirstNonEmpty(\n    data.status,\n    data.state,\n    result.status,\n    result.state,\n    body.data?.status,\n    body.status,\n    source.status,\n    source.state,\n    source.videoStatus,\n  ).toLowerCase();\n}\n\nfunction findVideoUrl(value) {\n  if (!value) return '';\n  if (typeof value === 'string') {\n    const normalized = value.toLowerCase();\n    if ((value.startsWith('http://') || value.startsWith('https://')) && ['.mp4', '.mov', '.webm', '.m3u8'].some((ext) => normalized.includes(ext))) return value;\n    return '';\n  }\n  if (Array.isArray(value)) {\n    for (const entry of value) {\n      const found = findVideoUrl(entry);\n      if (found) return found;\n    }\n    return '';\n  }\n  if (typeof value === 'object') {\n    for (const key of ['videoFileUrl', 'result_url', 'video_url', 'url', 'download_url', 'origin_url']) {\n      const found = findVideoUrl(value[key]);\n      if (found) return found;\n    }\n    for (const nested of Object.values(value)) {\n      const found = findVideoUrl(nested);\n      if (found) return found;\n    }\n  }\n  return '';\n}\n\nfunction failureMessageOf(source) {\n  if (!source || typeof source !== 'object') return String(source || '').trim();\n  const error = source.error;\n  return pickFirstNonEmpty(\n    source.message,\n    source.fail_reason,\n    source.reason,\n    source.statusMessage,\n    error && typeof error === 'object' ? error.message : error,\n    source.data?.message,\n    source.data?.fail_reason,\n    source.result?.message,\n  );\n}\n\nfunction httpStatusOf(...sources) {\n  for (const source of sources) {\n    if (!source || typeof source !== 'object') continue;\n    const candidates = [\n      source.statusCode,\n      source.status_code,\n      source.httpStatus,\n      source.http_status,\n      source.code,\n      source.response?.statusCode,\n      source.response?.status,\n      source.error?.statusCode,\n      source.error?.status,\n      source.error?.code,\n      source.error?.response?.statusCode,\n      source.error?.response?.status,\n      source.error?.cause?.statusCode,\n      source.error?.cause?.status,\n    ];\n    for (const candidate of candidates) {\n      const code = Number(candidate);\n      if (Number.isInteger(code) && code >= 100 && code < 600) return code;\n    }\n  }\n  return 0;\n}\n\nfunction collectProviderText(value, depth = 0, seen = new Set()) {\n  if (value === null || value === undefined || depth > 4) return '';\n  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);\n  if (typeof value !== 'object' || seen.has(value)) return '';\n  seen.add(value);\n  const parts = [];\n  for (const [key, nested] of Object.entries(value)) {\n    if (['apiKey', 'videoApiKey', 'imageApiKey', 'Authorization'].includes(key)) continue;\n    parts.push(key, collectProviderText(nested, depth + 1, seen));\n  }\n  return parts.filter(Boolean).join(' ');\n}\n\nfunction isNonRetryableFailure(source, message, providerResponse) {\n  const statusCode = httpStatusOf(providerResponse, source);\n  if (statusCode >= 400 && statusCode < 500 && ![408, 409, 425, 429].includes(statusCode)) return true;\n\n  const text = [message, collectProviderText(providerResponse), collectProviderText(source)].join(' ').toLowerCase();\n  return [\n    'invalid api key',\n    'unauthorized',\n    'forbidden',\n    'permission denied',\n    'bad request',\n    'invalid request',\n    'insufficient balance',\n    'quota exceeded',\n    '参数错误',\n    '参数无效',\n    '鉴权',\n    '无权限',\n    '余额不足',\n  ].some((needle) => text.includes(needle));\n}\n\nfunction retryDelayMs(source, attempt) {\n  const base = Math.max(1000, Number(source.config?.videoRetryDelayMs || source.videoRetryDelayMs || 30000));\n  const cap = Math.max(base, Number(source.config?.videoMaxRetryDelayMs || source.videoMaxRetryDelayMs || 180000));\n  return Math.min(cap, base * Math.max(1, attempt));\n}\n\nfunction withDerivedVideoFields(source) {\n  const videoId = jobIdOf(source);\n  const videoFileUrl = findVideoUrl(source);\n  return {\n    ...source,\n    videoPollId: videoId || source.videoPollId || '',\n    videoFileUrl: videoFileUrl || source.videoFileUrl || '',\n    videoStatus: statusOf(source) || source.videoStatus || '',\n    provider_last_response: source.provider_last_response || source,\n  };\n}\n\nfunction retryOrFail(source, reason, providerResponse) {\n  const attempt = Math.max(1, Number(source.videoAttempt || 1));\n  const maxAttempts = Math.max(1, Number(source.config?.videoMaxAttempts || source.videoMaxAttempts || 3));\n  const message = reason || failureMessageOf(providerResponse) || failureMessageOf(source) || 'Video generation failed.';\n\n  const retryable = !isNonRetryableFailure(source, message, providerResponse);\n  const nextDelayMs = retryDelayMs(source, attempt);\n\n  if (attempt < maxAttempts && retryable) {\n    return [{\n      json: {\n        ...source,\n        status: 'retry',\n        videoAttempt: attempt + 1,\n        videoRetryCount: attempt,\n        videoMaxAttempts: maxAttempts,\n        videoLastFailureMessage: message,\n        videoLastFailedTaskId: jobIdOf(source),\n        videoPollId: '',\n        videoStatusUrl: '',\n        videoStatus: '',\n        videoFileUrl: '',\n        videoPollAttempt: 0,\n        videoPollStartedAtMs: '',\n        videoPollDeadlineAtMs: '',\n        videoRetryDelayMs: nextDelayMs,\n        videoPollDelayMs: nextDelayMs,\n        provider_last_response: providerResponse || source.provider_last_response || null,\n      },\n    }];\n  }\n\n  return [{\n    json: {\n      ...source,\n      status: 'failed',\n      message,\n      videoAttempt: attempt,\n      videoRetryCount: Math.max(0, attempt - 1),\n      videoMaxAttempts: maxAttempts,\n      videoProviderRetryable: retryable,\n      provider_last_response: providerResponse || source.provider_last_response || null,\n    },\n  }];\n}\n\nlet current = withDerivedVideoFields({\n  ...item,\n  videoAttempt: Math.max(1, Number(item.videoAttempt || 1)),\n});\n\nif (current.error) {\n  return retryOrFail(current, failureMessageOf(current) || 'Video creation request failed.', current);\n}\n\nconst videoId = jobIdOf(current);\nconst currentStatus = statusOf(current);\n\nif (done.has(currentStatus)) return [{ json: { ...current, status: 'completed' } }];\nif (failed.has(currentStatus)) return retryOrFail(current, failureMessageOf(current), current);\nif (!videoId) return retryOrFail(current, 'Video job is missing id and cannot be polled.', current);\n\nconst intervalMs = Math.max(1000, Number(current.config?.pollIntervalMs || 10000));\nconst timeoutMs = Math.max(intervalMs, Number(current.config?.videoTimeoutMs || 40 * 60 * 1000));\nconst statusUrl = String(current.config?.videoStatusUrl || 'https://yunwu.ai/v1/videos/{id}').replace('{id}', encodeURIComponent(videoId));\nconst now = Date.now();\n\nreturn [{\n  json: {\n    ...current,\n    status: 'polling',\n    videoStatus: currentStatus || 'polling',\n    videoPollId: videoId,\n    videoStatusUrl: statusUrl,\n    videoPollAttempt: 0,\n    videoPollStartedAtMs: now,\n    videoPollDeadlineAtMs: now + timeoutMs,\n    videoPollIntervalMs: intervalMs,\n    videoPollDelayMs: 1000,\n    provider_last_response: current.provider_last_response || current,\n  },\n}];"
+      },
+      "id": "e7df1057-f463-4357-a403-49453fc7b0a7",
+      "name": "轮询视频任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nif (item.noVideos) return [{ json: item }];\n\nfunction pickFirstNonEmpty(...values) {\n  return values.find((value) => typeof value === 'string' && value.trim())?.trim() || '';\n}\n\nfunction normalizeId(value) {\n  const text = String(value ?? '').trim();\n  if (!text || /^\\d+$/.test(text)) return '';\n  return text;\n}\n\nfunction videoIdOf(source) {\n  if (!source || typeof source !== 'object') return '';\n  const data = source.data && typeof source.data === 'object' ? source.data : {};\n  const result = source.result && typeof source.result === 'object' ? source.result : {};\n  return pickFirstNonEmpty(\n    normalizeId(source.videoPollId),\n    normalizeId(data.id),\n    normalizeId(data.task_id),\n    normalizeId(source.task_id),\n    normalizeId(source.taskId),\n    normalizeId(source.video_id),\n    normalizeId(source.videoId),\n    normalizeId(result.id),\n    normalizeId(source.id),\n  );\n}\n\nfunction statusOf(source) {\n  const data = source.data && typeof source.data === 'object' ? source.data : {};\n  const result = source.result && typeof source.result === 'object' ? source.result : {};\n  return pickFirstNonEmpty(data.status, result.status, source.status, source.videoStatus).toLowerCase();\n}\n\nfunction findVideoUrl(value) {\n  if (!value) return '';\n  if (typeof value === 'string') {\n    const lower = value.toLowerCase();\n    if (/^https?:\\/\\//i.test(value) && ['.mp4', '.mov', '.webm', '.m3u8'].some((ext) => lower.includes(ext))) return value;\n    return '';\n  }\n  if (Array.isArray(value)) {\n    for (const entry of value) {\n      const found = findVideoUrl(entry);\n      if (found) return found;\n    }\n    return '';\n  }\n  if (typeof value === 'object') {\n    for (const key of ['videoFileUrl', 'result_url', 'video_url', 'url', 'download_url', 'origin_url']) {\n      const found = findVideoUrl(value[key]);\n      if (found) return found;\n    }\n    for (const nested of Object.values(value)) {\n      const found = findVideoUrl(nested);\n      if (found) return found;\n    }\n  }\n  return '';\n}\n\nconst videoId = videoIdOf(item);\nif (!videoId) throw new Error(item.slot + ' completed but Yunwu video response did not include task_id/data.id.');\n\nconst remoteStatus = statusOf(item) || 'completed';\nconst contentTemplate = item.config?.videoContentUrl || 'https://yunwu.ai/v1/videos/{id}/content';\nconst videoFileUrl = findVideoUrl(item) || contentTemplate.replace('{id}', encodeURIComponent(videoId));\n\nreturn [{\n  json: {\n    ...item,\n    videoPollId: videoId,\n    videoFileUrl,\n    videoLocalPath: '',\n    videoFileName: videoId + '.mp4',\n    videoMimeType: 'video/mp4',\n    videoStatus: remoteStatus,\n  },\n}];"
+      },
+      "id": "a25fb2c1-ce90-40f8-8a1c-3ef2d1429426",
+      "name": "保存视频结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        24
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ \"Video job failed: \" + ($json.message || JSON.stringify($json.error || $json)) }}"
+      },
+      "id": "7f380bd9-b6c8-4737-b7a7-cf64f682af5f",
+      "name": "停止：视频失败",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        128,
+        456
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let videoResults = [];\ntry {\n  videoResults = $items('\\u4fdd\\u5b58\\u89c6\\u9891\\u7ed3\\u679c')\n    .map((item) => item.json)\n    .filter((item) => !item.noVideos)\n    .sort((a, b) => Number(a.index || 0) - Number(b.index || 0));\n} catch (error) {}\nconst finalVideo = videoResults.at(-1);\nif (!finalVideo) throw new Error('No final video was completed.');\nconst video = finalVideo.videoLocalPath || finalVideo.videoFileUrl;\nif (!video) throw new Error('Final video completed but no video file path or URL was saved.');\nreturn [{ json: { video } }];"
+      },
+      "id": "03a11507-4ba4-4111-826f-d101fc4aebd1",
+      "name": "仅输出最终视频",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        248
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nfunction pickFirstNonEmpty(...values) {\n  return values.find((value) => typeof value === 'string' && value.trim())?.trim() || '';\n}\n\nconst firstSourcePath = pickFirstNonEmpty(item.firstVideoLocalPath, item.firstLocalPath, item.firstFileUrl);\nconst lastSourcePath = pickFirstNonEmpty(item.lastVideoLocalPath, item.lastLocalPath, item.lastFileUrl);\n\nreturn [{\n  json: {\n    ...item,\n    firstVideoLocalPath: firstSourcePath,\n    lastVideoLocalPath: lastSourcePath,\n    videoFramePrepareCommand: 'upload-original-binary-reference',\n  },\n}];"
+      },
+      "id": "0b32ce2e-30cc-4072-8f4a-2d5c4af5a26b",
+      "name": "准备视频参考帧尺寸",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "id": "f8df87f0-e211-46e2-b13d-cb99f7650ee2",
+      "name": "生成视频参考帧尺寸",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "clashHandling": {
+            "values": {
+              "resolveClash": "preferInput1",
+              "overrideEmpty": true
+            }
+          },
+          "includeUnpaired": false
+        }
+      },
+      "id": "77233e6f-bcfe-421b-a727-938d28f5133c",
+      "name": "合并尺寸处理上下文",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        576,
+        216
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ [\"completed\", \"succeeded\", \"success\", \"failed\", \"error\", \"timeout\", \"cancelled\", \"canceled\", \"expired\", \"retry\"].includes(String($json.status || \"\").toLowerCase()) ? 0 : 1 }}"
+      },
+      "id": "44d5a492-548a-441d-9ca9-e404cf1d4253",
+      "name": "视频是否需要轮询",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2592,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.max(1, Math.ceil(Number($json.videoPollDelayMs || $json.videoPollIntervalMs || $json.config?.pollIntervalMs || 10000) / 1000)) }}"
+      },
+      "id": "23adcce1-c8ff-495c-be60-e03a3a570929",
+      "name": "等待视频轮询",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2816,
+        544
+      ],
+      "webhookId": "50a475fe-81ee-4811-8b95-791d547143e9"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.videoStatusUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ ($json.config.videoApiKey || $json.config.apiKey) ? \"Bearer \" + ($json.config.videoApiKey || $json.config.apiKey) : \"\" }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "f8e6a4e3-2599-4c41-96b2-551f4ccdb27e",
+      "name": "查询视频状态",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3040,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst state = $('等待视频轮询').item.json;\n\nconst done = new Set(['completed', 'succeeded', 'success']);\nconst failed = new Set(['failed', 'error', 'timeout', 'cancelled', 'canceled', 'expired', 'generation_failed', 'generate_failed', 'failed_generation', '生成失败', '失败']);\n\nfunction pickFirstNonEmpty(...values) {\n  return values.find((value) => typeof value === 'string' && value.trim())?.trim() || '';\n}\n\nfunction normalizeId(value) {\n  return String(value ?? '').trim();\n}\n\nfunction jobIdOf(source) {\n  if (!source || typeof source !== 'object') return '';\n  const body = source.body && typeof source.body === 'object' ? source.body : {};\n  const data = source.data && typeof source.data === 'object' ? source.data : {};\n  const result = source.result && typeof source.result === 'object' ? source.result : {};\n  return pickFirstNonEmpty(\n    normalizeId(data.id),\n    normalizeId(data.task_id),\n    normalizeId(data.taskId),\n    normalizeId(source.task_id),\n    normalizeId(source.taskId),\n    normalizeId(source.id),\n    normalizeId(source.video_id),\n    normalizeId(source.videoId),\n    normalizeId(source.job_id),\n    normalizeId(source.jobId),\n    normalizeId(result.id),\n    normalizeId(result.task_id),\n    normalizeId(body.data?.id),\n    normalizeId(body.data?.task_id),\n    normalizeId(body.data?.taskId),\n    normalizeId(body.task_id),\n    normalizeId(body.id),\n    normalizeId(source.videoPollId),\n  );\n}\n\nfunction statusOf(source) {\n  if (!source || typeof source !== 'object') return '';\n  const body = source.body && typeof source.body === 'object' ? source.body : {};\n  const data = source.data && typeof source.data === 'object' ? source.data : {};\n  const result = source.result && typeof source.result === 'object' ? source.result : {};\n  return pickFirstNonEmpty(\n    data.status,\n    data.state,\n    result.status,\n    result.state,\n    body.data?.status,\n    body.status,\n    source.status,\n    source.state,\n    source.videoStatus,\n  ).toLowerCase();\n}\n\nfunction findVideoUrl(value) {\n  if (!value) return '';\n  if (typeof value === 'string') {\n    const normalized = value.toLowerCase();\n    if ((value.startsWith('http://') || value.startsWith('https://')) && ['.mp4', '.mov', '.webm', '.m3u8'].some((ext) => normalized.includes(ext))) return value;\n    return '';\n  }\n  if (Array.isArray(value)) {\n    for (const entry of value) {\n      const found = findVideoUrl(entry);\n      if (found) return found;\n    }\n    return '';\n  }\n  if (typeof value === 'object') {\n    for (const key of ['videoFileUrl', 'result_url', 'video_url', 'url', 'download_url', 'origin_url']) {\n      const found = findVideoUrl(value[key]);\n      if (found) return found;\n    }\n    for (const nested of Object.values(value)) {\n      const found = findVideoUrl(nested);\n      if (found) return found;\n    }\n  }\n  return '';\n}\n\nfunction failureMessageOf(source) {\n  if (!source || typeof source !== 'object') return String(source || '').trim();\n  const error = source.error;\n  return pickFirstNonEmpty(\n    source.message,\n    source.fail_reason,\n    source.reason,\n    source.statusMessage,\n    error && typeof error === 'object' ? error.message : error,\n    source.data?.message,\n    source.data?.fail_reason,\n    source.result?.message,\n  );\n}\n\nfunction httpStatusOf(...sources) {\n  for (const source of sources) {\n    if (!source || typeof source !== 'object') continue;\n    const candidates = [\n      source.statusCode,\n      source.status_code,\n      source.httpStatus,\n      source.http_status,\n      source.code,\n      source.response?.statusCode,\n      source.response?.status,\n      source.error?.statusCode,\n      source.error?.status,\n      source.error?.code,\n      source.error?.response?.statusCode,\n      source.error?.response?.status,\n      source.error?.cause?.statusCode,\n      source.error?.cause?.status,\n    ];\n    for (const candidate of candidates) {\n      const code = Number(candidate);\n      if (Number.isInteger(code) && code >= 100 && code < 600) return code;\n    }\n  }\n  return 0;\n}\n\nfunction collectProviderText(value, depth = 0, seen = new Set()) {\n  if (value === null || value === undefined || depth > 4) return '';\n  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);\n  if (typeof value !== 'object' || seen.has(value)) return '';\n  seen.add(value);\n  const parts = [];\n  for (const [key, nested] of Object.entries(value)) {\n    if (['apiKey', 'videoApiKey', 'imageApiKey', 'Authorization'].includes(key)) continue;\n    parts.push(key, collectProviderText(nested, depth + 1, seen));\n  }\n  return parts.filter(Boolean).join(' ');\n}\n\nfunction isNonRetryableFailure(source, message, providerResponse) {\n  const statusCode = httpStatusOf(providerResponse, source);\n  if (statusCode >= 400 && statusCode < 500 && ![408, 409, 425, 429].includes(statusCode)) return true;\n\n  const text = [message, collectProviderText(providerResponse), collectProviderText(source)].join(' ').toLowerCase();\n  return [\n    'invalid api key',\n    'unauthorized',\n    'forbidden',\n    'permission denied',\n    'bad request',\n    'invalid request',\n    'insufficient balance',\n    'quota exceeded',\n    '参数错误',\n    '参数无效',\n    '鉴权',\n    '无权限',\n    '余额不足',\n  ].some((needle) => text.includes(needle));\n}\n\nfunction retryDelayMs(source, attempt) {\n  const base = Math.max(1000, Number(source.config?.videoRetryDelayMs || source.videoRetryDelayMs || 30000));\n  const cap = Math.max(base, Number(source.config?.videoMaxRetryDelayMs || source.videoMaxRetryDelayMs || 180000));\n  return Math.min(cap, base * Math.max(1, attempt));\n}\n\nfunction withDerivedVideoFields(source) {\n  const videoId = jobIdOf(source);\n  const videoFileUrl = findVideoUrl(source);\n  return {\n    ...source,\n    videoPollId: videoId || source.videoPollId || '',\n    videoFileUrl: videoFileUrl || source.videoFileUrl || '',\n    videoStatus: statusOf(source) || source.videoStatus || '',\n    provider_last_response: source.provider_last_response || source,\n  };\n}\n\nfunction mergeResponse(source, payload) {\n  const body = payload && typeof payload === 'object' ? payload : { body: payload };\n  return withDerivedVideoFields({\n    ...source,\n    ...body,\n    status: statusOf(body) || statusOf(source),\n    provider_last_response: body,\n  });\n}\n\nfunction retryOrFail(source, reason, providerResponse) {\n  const attempt = Math.max(1, Number(source.videoAttempt || 1));\n  const maxAttempts = Math.max(1, Number(source.config?.videoMaxAttempts || source.videoMaxAttempts || 3));\n  const message = reason || failureMessageOf(providerResponse) || failureMessageOf(source) || 'Video generation failed.';\n\n  const retryable = !isNonRetryableFailure(source, message, providerResponse);\n  const nextDelayMs = retryDelayMs(source, attempt);\n\n  if (attempt < maxAttempts && retryable) {\n    return [{\n      json: {\n        ...source,\n        status: 'retry',\n        videoAttempt: attempt + 1,\n        videoRetryCount: attempt,\n        videoMaxAttempts: maxAttempts,\n        videoLastFailureMessage: message,\n        videoLastFailedTaskId: jobIdOf(source),\n        videoPollId: '',\n        videoStatusUrl: '',\n        videoStatus: '',\n        videoFileUrl: '',\n        videoPollAttempt: 0,\n        videoPollStartedAtMs: '',\n        videoPollDeadlineAtMs: '',\n        videoRetryDelayMs: nextDelayMs,\n        videoPollDelayMs: nextDelayMs,\n        provider_last_response: providerResponse || source.provider_last_response || null,\n      },\n    }];\n  }\n\n  return [{\n    json: {\n      ...source,\n      status: 'failed',\n      message,\n      videoAttempt: attempt,\n      videoRetryCount: Math.max(0, attempt - 1),\n      videoMaxAttempts: maxAttempts,\n      videoProviderRetryable: retryable,\n      provider_last_response: providerResponse || source.provider_last_response || null,\n    },\n  }];\n}\n\nconst intervalMs = Math.max(1000, Number(state.videoPollIntervalMs || state.config?.pollIntervalMs || 10000));\nconst attempt = Number(state.videoPollAttempt || 0) + 1;\nlet current = withDerivedVideoFields({\n  ...state,\n  videoPollAttempt: attempt,\n  videoPollDelayMs: intervalMs,\n});\n\nconst deadlineMs = Number(current.videoPollDeadlineAtMs || 0);\nif (deadlineMs && Date.now() > deadlineMs) {\n  return retryOrFail(current, 'Video job polling timed out after ' + Number(current.config?.videoTimeoutMs || 40 * 60 * 1000) + 'ms.', current.provider_last_response || current);\n}\n\nif (response?.error) {\n  return retryOrFail(current, failureMessageOf(response) || 'Video status request failed.', response);\n}\n\ncurrent = mergeResponse(current, response);\nconst currentStatus = statusOf(current);\n\nif (done.has(currentStatus) || findVideoUrl(current)) {\n  return [{ json: { ...current, status: 'completed', videoStatus: currentStatus || 'completed' } }];\n}\nif (failed.has(currentStatus)) {\n  return retryOrFail(current, failureMessageOf(response), response);\n}\n\nreturn [{\n  json: {\n    ...current,\n    status: 'pending',\n    videoStatus: currentStatus || 'pending',\n    videoPollAttempt: attempt,\n    videoPollDelayMs: intervalMs,\n  },\n}];"
+      },
+      "id": "6fa73ced-8df1-4342-9074-24178dc05389",
+      "name": "解析视频轮询响应",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3264,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ String($json.status || \"\").toLowerCase() === \"pending\" ? 0 : 1 }}"
+      },
+      "id": "65a1b8a2-cb65-4aeb-ad8d-ce0781936f7e",
+      "name": "视频轮询是否继续",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3488,
+        616
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.max(1, Math.ceil(Number($json.videoRetryDelayMs || $json.config?.videoRetryDelayMs || 30000) / 1000)) }}"
+      },
+      "id": "22c1b0bc-6f18-4c24-8729-5e2ed999ed80",
+      "name": "等待视频重试",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        648
+      ],
+      "webhookId": "1b8d3165-f483-4742-b676-0fd5e11ac4fc"
+    }
+  ],
+  "connections": {
+    "手动测试触发": {
+      "main": [
+        [
+          {
+            "node": "读取 Notion 任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "读取 Notion 任务": {
+      "main": [
+        [
+          {
+            "node": "统一配置",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "统一配置": {
+      "main": [
+        [
+          {
+            "node": "加载图片结果并拆分视频任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "加载图片结果并拆分视频任务": {
+      "main": [
+        [
+          {
+            "node": "视频循环",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "视频循环": {
+      "main": [
+        [
+          {
+            "node": "仅输出最终视频",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "视频创建与状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载首帧": {
+      "main": [
+        [
+          {
+            "node": "合并首帧上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并首帧上下文": {
+      "main": [
+        [
+          {
+            "node": "是否存在尾帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "是否存在尾帧": {
+      "main": [
+        [
+          {
+            "node": "下载尾帧",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并尾帧上下文",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "创建视频任务：首帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载尾帧": {
+      "main": [
+        [
+          {
+            "node": "合并尾帧上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并尾帧上下文": {
+      "main": [
+        [
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "创建视频任务：首尾帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "合并视频创建上下文": {
+      "main": [
+        [
+          {
+            "node": "轮询视频任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "轮询视频任务": {
+      "main": [
+        [
+          {
+            "node": "视频是否需要轮询",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存视频结果": {
+      "main": [
+        [
+          {
+            "node": "视频循环",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "创建视频任务：首帧": {
+      "main": [
+        [
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "创建视频任务：首尾帧": {
+      "main": [
+        [
+          {
+            "node": "合并视频创建上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "视频创建与状态路由": {
+      "main": [
+        [
+          {
+            "node": "保存视频结果",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "停止：视频失败",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "等待视频重试",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "准备视频参考帧尺寸",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备视频参考帧尺寸": {
+      "main": [
+        [
+          {
+            "node": "生成视频参考帧尺寸",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并尺寸处理上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成视频参考帧尺寸": {
+      "main": [
+        [
+          {
+            "node": "合并尺寸处理上下文",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "合并尺寸处理上下文": {
+      "main": [
+        [
+          {
+            "node": "下载首帧",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "合并首帧上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "视频是否需要轮询": {
+      "main": [
+        [
+          {
+            "node": "视频创建与状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "等待视频轮询",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "等待视频轮询": {
+      "main": [
+        [
+          {
+            "node": "查询视频状态",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询视频状态": {
+      "main": [
+        [
+          {
+            "node": "解析视频轮询响应",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析视频轮询响应": {
+      "main": [
+        [
+          {
+            "node": "视频轮询是否继续",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "视频轮询是否继续": {
+      "main": [
+        [
+          {
+            "node": "等待视频轮询",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "视频创建与状态路由",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "等待视频重试": {
+      "main": [
+        [
+          {
+            "node": "准备视频参考帧尺寸",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "df804a65-511c-4736-9b01-1cbbad5ee337",
+  "activeVersionId": null,
+  "versionCounter": 41,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-04-24T11:02:38.431Z",
+      "createdAt": "2026-04-24T11:02:38.431Z",
+      "role": "workflow:owner",
+      "workflowId": "_g2QRLmOePU91Dn7MIGft",
+      "projectId": "nQuwuwWEA2Ogtjn3",
+      "project": {
+        "updatedAt": "2026-01-06T11:52:47.089Z",
+        "createdAt": "2026-01-06T11:51:37.275Z",
+        "id": "nQuwuwWEA2Ogtjn3",
+        "name": "wushi wushi <w393312401@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "31951dbd-9555-4d7f-aa96-e7e42206a8b7",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-06T11:51:37.275Z",
+            "createdAt": "2026-01-06T11:51:37.275Z",
+            "userId": "31951dbd-9555-4d7f-aa96-e7e42206a8b7",
+            "projectId": "nQuwuwWEA2Ogtjn3",
+            "user": {
+              "updatedAt": "2026-04-25T11:46:14.000Z",
+              "createdAt": "2026-01-06T11:51:37.139Z",
+              "id": "31951dbd-9555-4d7f-aa96-e7e42206a8b7",
+              "email": "w393312401@gmail.com",
+              "firstName": "wushi",
+              "lastName": "wushi",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-06T11:52:49.749Z",
+                "personalization_survey_n8n_version": "2.2.3"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "Y1n_Q5lT5WdyjebFuwiG2",
+                "userActivatedAt": 1769267466490,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1772708987808
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-04-25",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

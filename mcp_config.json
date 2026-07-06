@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "C:\\Users\\video\\Desktop\\N8N-main\\mcp_wrapper.bat",
+      "args": [
+        "--sse",
+        "http://127.0.0.1:5678/mcp-server/http",
+        "--header",
+        "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMjk1NjgwNi00YThiLTQyNmQtYTUwYS0zOGY4YzY4OTY5OWYiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6IjY1NGFkMjYwLTk5N2YtNGIwOC04Mzk4LTUwN2VlMDZlMjZmNSIsImlhdCI6MTc4MDYyMzkxMn0.h-00g8Zk8BuTsScRchbN0dmcOMO5O9ZXGP0J1dwj5jI"
+      ]
+    },
+    "n8n-mcp-docs": {
+      "command": "C:\\Users\\video\\Desktop\\node-v22.16.0-win-x64\\n8n-mcp.cmd",
+      "env": {
+        "N8N_API_URL": "http://127.0.0.1:5678/api/v1",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiMjk1NjgwNi00YThiLTQyNmQtYTUwYS0zOGY4YzY4OTY5OWYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiNWNiNjBlN2EtNmFhZS00M2IwLTlkYzMtNzIzNmQ1MjJiNWJiIiwiaWF0IjoxNzgwNjI2MjY5fQ.CKPPhJ8XZ_oVUW7FNSIRyTj8Z-Ej1vjXyzAv-ZgkW8U"
+      }
+    },
+    "adspower-browser": {
+      "command": "C:\\Users\\video\\Desktop\\node-v22.16.0-win-x64\\node.exe",
+      "args": [
+        "C:\\Users\\video\\Desktop\\N8N-main\\Adspower\\adspower-browser-main\\packages\\local-api-mcp\\build\\index.js"
+      ]
+    }
+  }
+}

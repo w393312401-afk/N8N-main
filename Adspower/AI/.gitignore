@@ -1,0 +1,32 @@
+# ===== 运行产生的垃圾文件（不进版本库）=====
+
+# 日志
+logs/*.log
+logs/*.bak
+logs/*.png
+*.log
+
+# 调试截图
+**/debug_*.png
+**/diagnose_*.png
+
+# macOS 桌面缓存
+.DS_Store
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 运行时临时文件
+runtime/*.pid
+runtime/*.log
+runtime/.deps_checked
+core/scratch/
+
+# 敏感配置（含密钥，切勿提交）
+.env
+
+# 临时草稿
+*.tmp
+*.bak
