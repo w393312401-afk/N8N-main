@@ -1089,7 +1089,15 @@ def _matches_model_status(text, model):
     if model.lower().startswith("veo"):
         aliases = {target}
         if "lite" in target:
-            aliases.update({"veo 3 1 lite", "veo lite"})
+            # 兼容 Pro 等不同套餐下 Lite 模型文字的差异，使 "Veo 3.1 - Lite" 与 "Veo 3.1 - Lite [Lower Priority]" 相互匹配
+            aliases.update({
+                "veo 3 1 lite",
+                "veo lite",
+                "veo 3.1 - lite",
+                "veo 3.1 - lite [lower priority]",
+                "lower priority",
+                "lite lower priority"
+            })
         if "fast" in target:
             aliases.update({"veo 3 1 fast", "veo fast"})
         if "quality" in target:
@@ -1596,10 +1604,20 @@ def fix_fx_config(page, cfg_btn, checks, model="Nano Banana 2", orientation="Por
                     except Exception:
                         pass
                     selected = False
-                    if _click_fx_menu_item(page, model, button_id_hint=model_btn_id):
-                        log(f"  ✅ {model} 已选择 (full match)", "GoogleFX")
-                        selected = True
-                        fix_info["clicked_keys"].append("model")
+                    # 备选模型列表，用于处理免费/付费/Pro套餐等不同套餐下模型的不同命名/可用性 (例如 Veo 3.1 - Lite 与 Veo 3.1 - Lite [Lower Priority] 互为备选)
+                    candidate_models = [model]
+                    if model == "Veo 3.1 - Lite [Lower Priority]":
+                        candidate_models.append("Veo 3.1 - Lite")
+                    elif model == "Veo 3.1 - Lite":
+                        candidate_models.append("Veo 3.1 - Lite [Lower Priority]")
+
+                    for target_model in candidate_models:
+                        if _click_fx_menu_item(page, target_model, button_id_hint=model_btn_id):
+                            log(f"  ✅ {target_model} 已选择 (match '{target_model}')", "GoogleFX")
+                            selected = True
+                            fix_info["clicked_keys"].append("model")
+                            break
+
                     # 策略2: 关键词匹配 (如 'Banana Pro', 'Imagen 4')
                     if not selected:
                         # 取模型名中最具区分性的部分

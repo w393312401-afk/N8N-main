@@ -33,6 +33,7 @@ from services.google_fx import (
     _ensure_output_dir,
     _get_panel_uuids,
     _safe_press_escape,
+    _normalize_model_name,
 )
 from services.google_fx_helpers import (
     _find_add2_btn,
@@ -315,7 +316,9 @@ def _generate_video_google_fx(req: VideoRequest):
     browser = None
     captured_data = []
     result = {"status": "failed", "video_url": None, "message": ""}
-    log(f"🚀 Veo 3.1 视频生成请求: {req.prompt[:30]}...", "GoogleFX-Video")
+    # 规整传入的模型名，防止如 "veo 3.1 lite" 导致不匹配
+    req.model = _normalize_model_name(req.model, is_video=True)
+    log(f"🚀 Veo 3.1 视频生成请求: {req.prompt[:30]}... [模型: {req.model}]", "GoogleFX-Video")
 
     try:
         with sync_playwright() as p:
@@ -1207,6 +1210,11 @@ def generate_videos_batch_google_fx(reqs: list, on_progress=None, cancel_check=N
     # 这里做一次解包，提取真正的 items 列表。
     if hasattr(reqs, "items") and not isinstance(reqs, list):
         reqs = reqs.items or []
+
+    # 规范化批量生成中每个子任务的模型名
+    for r in reqs:
+        if hasattr(r, "model"):
+            r.model = _normalize_model_name(r.model, is_video=True)
 
     log(f"🚀 开始批量生成视频，共 {len(reqs)} 段...", "GoogleFX-Video")
 
