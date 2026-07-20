@@ -22,31 +22,31 @@ from utils.browser import random_sleep, clean_path
 from utils.ui_helpers import inject_batch_image_observer
 from utils import cancel_flag
 
-# Import shared core gateway and common functions from google_fx
-from services.google_fx import (
+# L1 DOM 原语
+from services.google_fx_dom import _click_first_visible, _find_first_visible, _safe_press_escape
+# L2 FX 页面语义 (含媒体捕获 / 输出目录 / 取消检测 / 代理轮换)
+from services.google_fx_helpers import (
     _check_cancelled,
-    _make_response_handler,
-    _click_first_visible,
-    _find_first_visible,
+    _trigger_emergency_proxy_rotation,
+    _CAPTURED_DATA_MAXLEN,
     _normalize_ratio_value,
     _normalize_model_name,
     _verify_and_fix_fx_config,
-    _trigger_emergency_proxy_rotation,
     _connect_fx_page,
     _raise_if_manual_intervention_required,
     _prepare_fx_canvas,
     _get_panel_uuids,
     _count_error_cards,
     _delete_failed_cards,
+    _make_response_handler,
+    _ensure_output_dir,
+    _clear_prompt_reference_chips_image,
     _add_flow_image_to_prompt,
     _wait_for_flow_reference_ready,
     _find_fx_prompt_input,
     _mount_uuid_as_ref,
     click_fx_send_button,
     _get_prompt_reference_uuids,
-    _safe_press_escape,
-    _ensure_output_dir,
-    _CAPTURED_DATA_MAXLEN
 )
 
 # ── _generate_images_batch_google_fx_unlocked ──
@@ -124,6 +124,9 @@ def _generate_images_batch_google_fx_single_attempt(req: ImageBatchRequest):
             if not input_el:
                 raise Exception("无法找到输入框")
             log("🧹 正在彻底清空输入框及历史参考图...", "GoogleFX")
+            # 先清掉挂在编辑器之外「素材槽」里的历史参考图 chip
+            # （Ctrl+A/Backspace 只能清空编辑器内部，够不到这些）
+            _clear_prompt_reference_chips_image(page)
             try:
                 input_el.click()
                 random_sleep(0.3, 0.5)

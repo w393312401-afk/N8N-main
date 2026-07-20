@@ -23,18 +23,17 @@ from utils.browser import (
 )
 from ui_selectors import UI_SELECTORS, RATIO_MAP
 
-# 导入共享的核心配置验证、连接与交互方法
-from services.google_fx import (
+# L1 DOM 原语
+from services.google_fx_dom import _safe_press_escape
+# L2 FX 页面语义 (配置校验、页面连接、输入框/发送按钮、画布 uuid 扫描、媒体捕获等)
+from services.google_fx_helpers import (
     _verify_and_fix_fx_config,
-    _make_response_handler,
     _connect_fx_page,
     _find_fx_prompt_input,
     click_fx_send_button,
-    _ensure_output_dir,
     _get_panel_uuids,
-    _safe_press_escape,
-)
-from services.google_fx_helpers import (
+    _make_response_handler,
+    _ensure_output_dir,
     _find_add2_btn,
     _mount_video_prompt_refs,
     _submit_video_to_canvas,
@@ -383,7 +382,7 @@ def _generate_video_google_fx(req: VideoRequest):
                     if not end_uuid:
                         raise RuntimeError("尾帧图片上传到画布失败")
 
-            # 🛠️ 2. 验证并切换配置到 Video 模式 + 指定模型 + VIDEO_FRAMES 视频子模式
+            # 🛠️ 2. 验证并切换配置到 Video 模式 + 指定模型 + 时长 + VIDEO_FRAMES 视频子模式
             log("⚙️ 切换配置到 Video / 帧 模式...", "GoogleFX-Video")
             _verify_and_fix_fx_config(
                 page,
@@ -391,6 +390,7 @@ def _generate_video_google_fx(req: VideoRequest):
                 ratio=req.ratio,
                 want_video=True,
                 context_label="切换Video",
+                duration=req.duration,
                 video_submode="VIDEO_FRAMES"
             )
 
@@ -977,14 +977,16 @@ class _ChunkRunner:
     # ── 相位 4: 依次提交任务（不等待生成完成） ──
 
     def _ensure_video_config(self, page, req):
-        """确认 Flow 处于 Video/帧 模式 + 指定模型/比例。
+        """确认 Flow 处于 Video/帧 模式 + 指定模型/比例/时长。
         同一浏览器会话内首个任务做完整校验（打开配置面板确认，~5s）；后续任务
-        若 (model, ratio) 未变则跳过——提交动作本身不会改变模式/模型，重复打开
-        面板纯属浪费（2026-07-01 实测 16 段任务约浪费 80s）。会话重建/页面刷新
-        时 _confirmed_config 被重置，自动恢复完整校验。"""
-        wanted = (req.model, req.ratio)
+        若 (model, ratio, duration) 未变则跳过——提交动作本身不会改变模式/模型/时长，
+        重复打开面板纯属浪费（2026-07-01 实测 16 段任务约浪费 80s）。会话重建/页面
+        刷新时 _confirmed_config 被重置，自动恢复完整校验。duration 纳入缓存键：
+        否则同模型/比例但时长不同的连续任务会被误判为"配置未变"而跳过时长切换，
+        例如 Omni Flash 先提交一段 8s 又提交一段 4s，第二段会静默沿用 8s。"""
+        wanted = (req.model, req.ratio, req.duration)
         if self._confirmed_config == wanted:
-            log("⚙️ 本会话已确认过相同配置（模型/比例未变），跳过重复校验", "GoogleFX-Video")
+            log("⚙️ 本会话已确认过相同配置（模型/比例/时长未变），跳过重复校验", "GoogleFX-Video")
             return
         _verify_and_fix_fx_config(
             page,
@@ -992,6 +994,7 @@ class _ChunkRunner:
             ratio=req.ratio,
             want_video=True,
             context_label="切换Video",
+            duration=req.duration,
             video_submode="VIDEO_FRAMES"
         )
         self._confirmed_config = wanted

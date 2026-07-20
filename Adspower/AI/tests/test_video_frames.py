@@ -64,10 +64,10 @@ def test_upload_only():
     import time as _time
     from playwright.sync_api import sync_playwright
     from utils.browser import get_ads_ws_url, find_or_create_page, random_sleep, clean_path
-    from services.google_fx import (
+    from services.google_fx_dom import _safe_press_escape
+    from services.google_fx_helpers import (
         find_fx_config_button, check_fx_config, fix_fx_config,
         _wait_for_fx_toolbar, _normalize_ratio_value,
-        _safe_press_escape,
     )
     from ui_selectors import RATIO_MAP
 
@@ -134,7 +134,7 @@ def test_upload_only():
             # 实际上 _generate_video_google_fx 会一直执行，所以我们用
             # 独立内联逻辑来只做上传。
 
-            from services.google_fx import (
+            from services.google_fx_helpers import (
                 _wait_for_flow_reference_ready,
             )
 
